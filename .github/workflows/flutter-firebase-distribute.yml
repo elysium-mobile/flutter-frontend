@@ -89,6 +89,8 @@ jobs:
   # ----------------------------------------------------------------
   ios-build-distribute:
     runs-on: macos-14
+    env:
+      FLUTTER_XCODE_ONLY: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -129,10 +131,7 @@ jobs:
           EOF
 
       - name: Install dependencies
-        run: |
-          flutter pub get --no-example
-        env:
-          FLUTTER_SUPPRESS_ANALYTICS: true
+        run: flutter pub get
 
       - name: Initialize iOS configuration and Pods
         run: |
