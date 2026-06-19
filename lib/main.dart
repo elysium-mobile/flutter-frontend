@@ -7,6 +7,7 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app_router.dart';
+import 'firebase_options.dart';
 import 'iam/application/bloc/session_bloc.dart';
 import 'service_locator.dart';
 import 'shared/data/network/environment_config.dart';
@@ -48,7 +49,9 @@ Future<void> _initializeFirebase() async {
   }
   try {
     if (!EnvironmentConfig.hasFirebaseConfiguration) {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       return;
     }
     await Firebase.initializeApp(
