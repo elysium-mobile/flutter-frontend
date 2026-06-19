@@ -129,10 +129,18 @@ jobs:
           EOF
 
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get --no-example
+        env:
+          FLUTTER_SUPPRESS_ANALYTICS: true
 
-      - name: Initialize iOS configuration
-        run: flutter build ios --config-only
+      - name: Initialize iOS configuration and Pods
+        run: |
+          cd ios
+          pod repo update
+          pod install
+          cd ..
+          flutter build ios --config-only
 
       - name: Build iOS IPA
         run: |
