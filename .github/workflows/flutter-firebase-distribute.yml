@@ -32,6 +32,40 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Create google-services.json
+        run: |
+          cat <<EOF > android/app/google-services.json
+          {
+            "project_info": {
+              "project_number": "301176068632",
+              "project_id": "${{ secrets.FIREBASE_PROJECT_ID }}",
+              "storage_bucket": "${{ secrets.FIREBASE_PROJECT_ID }}.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "${{ secrets.FIREBASE_APP_ID }}",
+                  "android_client_info": {
+                    "package_name": "com.elysium.softwork"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "${{ secrets.FIREBASE_API_KEY }}"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+
       - name: Build Android APK
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
@@ -67,6 +101,9 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Initialize iOS configuration
+        run: flutter build ios --config-only
 
       - name: Build iOS IPA
         run: |
