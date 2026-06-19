@@ -7,27 +7,33 @@ on:
 
 jobs:
   # ----------------------------------------------------------------
-  # ANDROID: COMPILATION AND DEPLOYMENT
+  # ANDROID
   # ----------------------------------------------------------------
   android-build-distribute:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
         id: setup-java
+        uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'gradle'
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
+
+      - name: Flutter Doctor
+        run: |
+          flutter --version
+          flutter doctor -v
 
       - name: Install dependencies
         run: flutter pub get
@@ -71,26 +77,29 @@ jobs:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         run: |
           flutter build apk --debug \
-            --dart-define=API_BASE_URL="https://api.softwork.elysium.example/" \
-            --dart-define=FIREBASE_API_KEY="${{ secrets.FIREBASE_API_KEY }}" \
-            --dart-define=FIREBASE_APP_ID="${{ secrets.FIREBASE_APP_ID }}" \
-            --dart-define=FIREBASE_PROJECT_ID="${{ secrets.FIREBASE_PROJECT_ID }}" \
-            --dart-define=GOOGLE_SERVER_CLIENT_ID="${{ secrets.GOOGLE_SERVER_CLIENT_ID }}"
+            --dart-define=API_BASE_URL=https://api.softwork.elysium.example/ \
+            --dart-define=FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} \
+            --dart-define=FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }} \
+            --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
 
-      - name: Upload to Firebase App Distribution (Android)
+      - name: Upload Android to Firebase App Distribution
         uses: w9jds/firebase-action@v2.2.2
         with:
-          args: appdistribution:distribute build/app/outputs/flutter-apk/app-debug.apk --app ${{ secrets.FIREBASE_APP_ID }} --groups "testers-android-ios"
+          args: >
+            appdistribution:distribute
+            build/app/outputs/flutter-apk/app-debug.apk
+            --app ${{ secrets.FIREBASE_APP_ID }}
+            --groups testers-android-ios
         env:
           GCP_SA_KEY: ${{ secrets.FIREBASE_CREDENTIALS }}
 
   # ----------------------------------------------------------------
-  # IOS: COMPILATION AND DEPLOYMENT
+  # IOS
   # ----------------------------------------------------------------
   ios-build-distribute:
     runs-on: macos-14
-    env:
-      FLUTTER_XCODE_ONLY: true
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -98,8 +107,21 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           cache: true
+
+      - name: Flutter Doctor
+        run: |
+          flutter --version
+          flutter doctor -v
+
+      - name: Clean previous build artifacts
+        run: |
+          flutter clean
+          rm -rf ios/Pods
+          rm -rf ios/.symlinks
+          rm -rf ios/Podfile.lock
+          rm -rf build
 
       - name: Create GoogleService-Info.plist
         run: |
@@ -110,20 +132,22 @@ jobs:
           <dict>
             <key>API_KEY</key>
             <string>${{ secrets.FIREBASE_API_KEY }}</string>
-            <key>APP_ID</key>
+
+            <key>GOOGLE_APP_ID</key>
             <string>${{ secrets.FIREBASE_IOS_APP_ID }}</string>
+
             <key>PROJECT_ID</key>
             <string>${{ secrets.FIREBASE_PROJECT_ID }}</string>
+
             <key>GCM_SENDER_ID</key>
             <string>301176068632</string>
-            <key>IS_ADS_ENABLED</key>
-            <false/>
+
             <key>IS_ANALYTICS_ENABLED</key>
             <false/>
-            <key>IS_APPINVITE_ENABLED</key>
-            <false/>
+
             <key>IS_GCM_ENABLED</key>
             <true/>
+
             <key>IS_SIGNIN_ENABLED</key>
             <true/>
           </dict>
@@ -133,27 +157,38 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Initialize iOS configuration and Pods
+      - name: Generate iOS configuration
+        run: flutter build ios --config-only --no-codesign
+
+      - name: Install CocoaPods
         run: |
           cd ios
           pod repo update
           pod install
           cd ..
-          flutter build ios --config-only
 
       - name: Build iOS IPA
         run: |
-          flutter build ipa --debug \
-            --dart-define=API_BASE_URL="https://api.softwork.elysium.example/" \
-            --dart-define=FIREBASE_API_KEY="${{ secrets.FIREBASE_API_KEY }}" \
-            --dart-define=FIREBASE_APP_ID="${{ secrets.FIREBASE_IOS_APP_ID }}" \
-            --dart-define=FIREBASE_PROJECT_ID="${{ secrets.FIREBASE_PROJECT_ID }}" \
-            --dart-define=GOOGLE_SERVER_CLIENT_ID="${{ secrets.GOOGLE_SERVER_CLIENT_ID }}" \
-            --no-codesign
+          flutter build ipa \
+            --debug \
+            --no-codesign \
+            --dart-define=API_BASE_URL=https://api.softwork.elysium.example/ \
+            --dart-define=FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} \
+            --dart-define=FIREBASE_APP_ID=${{ secrets.FIREBASE_IOS_APP_ID }} \
+            --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
 
-      - name: Upload to Firebase App Distribution (iOS)
+      - name: List generated IPA
+        run: |
+          find build -name "*.ipa"
+
+      - name: Upload iOS to Firebase App Distribution
         uses: w9jds/firebase-action@v2.2.2
         with:
-          args: appdistribution:distribute build/ios/ipa/*.ipa --app ${{ secrets.FIREBASE_IOS_APP_ID }} --groups "testers-android-ios"
+          args: >
+            appdistribution:distribute
+            build/ios/ipa/*.ipa
+            --app ${{ secrets.FIREBASE_IOS_APP_ID }}
+            --groups testers-android-ios
         env:
           GCP_SA_KEY: ${{ secrets.FIREBASE_CREDENTIALS }}
