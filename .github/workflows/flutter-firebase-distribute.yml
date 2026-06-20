@@ -155,6 +155,21 @@ jobs:
         run: |
           flutter build ios --config-only --no-codesign
 
+      - name: Build iOS IPA
+        run: |
+          flutter build ipa \
+            --debug \
+            --no-codesign \
+            --dart-define=API_BASE_URL=https://api.softwork.elysium.example/ \
+            --dart-define=FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} \
+            --dart-define=FIREBASE_APP_ID=${{ secrets.FIREBASE_IOS_APP_ID }} \
+            --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+
+      - name: Check IPA
+        run: |
+          find build -name "*.ipa" -type f
+
       - name: Create Firebase credentials file
         run: |
           echo '${{ secrets.FIREBASE_CREDENTIALS }}' > firebase-key.json
@@ -164,8 +179,17 @@ jobs:
 
       - name: Upload iOS to Firebase App Distribution
         run: |
+          IPA_PATH=$(find build -name "*.ipa" | head -n 1)
+
+          if [ -z "$IPA_PATH" ]; then
+            echo "No IPA found"
+            exit 1
+          fi
+
+          echo "Uploading $IPA_PATH"
+
           firebase appdistribution:distribute \
-            build/ios/ipa/*.ipa \
+            "$IPA_PATH" \
             --app "${{ secrets.FIREBASE_IOS_APP_ID }}" \
             --groups "testers-android-ios"
         env:
