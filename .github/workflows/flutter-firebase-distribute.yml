@@ -98,7 +98,7 @@ jobs:
   # IOS
   # ----------------------------------------------------------------
   ios-build-distribute:
-    runs-on: macos-14
+    runs-on: macos-15
 
     steps:
       - name: Checkout code
@@ -107,23 +107,27 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: "3.44.2"
           cache: true
 
       - name: Flutter Doctor
         run: |
           flutter --version
+          dart --version
           flutter doctor -v
 
-      - name: Clean previous build artifacts
+      - name: Clean
         run: |
           flutter clean
-          rm -rf ios/Pods
-          rm -rf ios/.symlinks
-          rm -rf ios/Podfile.lock
           rm -rf build
+          rm -rf .dart_tool
 
-      - name: Create GoogleService-Info.plist
+      - name: Create SwiftPM directories
+        run: |
+          mkdir -p build/ios/SourcePackages
+          mkdir -p ios/Flutter/ephemeral
+
+      - name: Restore Firebase plist
         run: |
           cat <<EOF > ios/Runner/GoogleService-Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
@@ -132,42 +136,26 @@ jobs:
           <dict>
             <key>API_KEY</key>
             <string>${{ secrets.FIREBASE_API_KEY }}</string>
-
             <key>GOOGLE_APP_ID</key>
             <string>${{ secrets.FIREBASE_IOS_APP_ID }}</string>
-
             <key>PROJECT_ID</key>
             <string>${{ secrets.FIREBASE_PROJECT_ID }}</string>
-
             <key>GCM_SENDER_ID</key>
             <string>301176068632</string>
-
-            <key>IS_ANALYTICS_ENABLED</key>
-            <false/>
-
-            <key>IS_GCM_ENABLED</key>
-            <true/>
-
-            <key>IS_SIGNIN_ENABLED</key>
-            <true/>
           </dict>
           </plist>
           EOF
 
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Generate iOS configuration
-        run: flutter build ios --config-only --no-codesign
-
-      - name: Install CocoaPods
+      - name: Flutter Pub Get
         run: |
-          cd ios
-          pod repo update
-          pod install
-          cd ..
+          mkdir -p build/ios/SourcePackages
+          flutter pub get -v
 
-      - name: Build iOS IPA
+      - name: Generate iOS Config
+        run: |
+          flutter build ios --config-only --no-codesign
+
+      - name: Build IPA
         run: |
           flutter build ipa \
             --debug \
@@ -177,10 +165,6 @@ jobs:
             --dart-define=FIREBASE_APP_ID=${{ secrets.FIREBASE_IOS_APP_ID }} \
             --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
             --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
-
-      - name: List generated IPA
-        run: |
-          find build -name "*.ipa"
 
       - name: Upload iOS to Firebase App Distribution
         uses: w9jds/firebase-action@v2.2.2
