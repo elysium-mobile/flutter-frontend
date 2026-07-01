@@ -48,7 +48,8 @@ dependencies:
 
   # Network and store
   http: ^1.6.0
-  sqflite: ^2.4.3
+  sqlite3: ^3.3.3
+  drift: ^2.34.0
   path: ^1.9.1
   shared_preferences: ^2.5.5
 
