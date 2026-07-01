@@ -51,6 +51,7 @@ dependencies:
   sqlite3: ^3.3.3
   drift: ^2.34.0
   path: ^1.9.1
+  path_provider: ^2.1.6
   shared_preferences: ^2.5.5
 
   # Firebase Production
@@ -83,6 +84,8 @@ dev_dependencies:
   # Environments for development
   build_runner: ^2.15.0
   json_serializable: ^6.14.0
+  # Drift code generator (registers the drift_dev builder used by build.yaml).
+  drift_dev: ^2.34.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
