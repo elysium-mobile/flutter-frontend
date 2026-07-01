@@ -100,6 +100,9 @@ jobs:
   ios-build-distribute:
     runs-on: macos-15
 
+    env:
+      BUNDLE_ID: com.elysium.softwork
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -113,19 +116,12 @@ jobs:
       - name: Flutter Doctor
         run: |
           flutter --version
-          dart --version
           flutter doctor -v
 
       - name: Clean
         run: |
           flutter clean
-          rm -rf build
-          rm -rf .dart_tool
-
-      - name: Create SwiftPM directories
-        run: |
-          mkdir -p build/ios/SourcePackages
-          mkdir -p ios/Flutter/ephemeral
+          rm -rf build .dart_tool
 
       - name: Restore Firebase plist
         run: |
@@ -147,19 +143,68 @@ jobs:
           EOF
 
       - name: Flutter Pub Get
+        run: flutter pub get -v
+
+      # --- Code signing setup (the missing piece) ---
+      - name: Import signing certificate & provisioning profile
+        env:
+          CERT_B64: ${{ secrets.IOS_DIST_CERT_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          PROFILE_B64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          mkdir -p build/ios/SourcePackages
-          flutter pub get -v
+          set -euo pipefail
+          CERT_PATH="$RUNNER_TEMP/cert.p12"
+          PROFILE_PATH="$RUNNER_TEMP/profile.mobileprovision"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+
+          echo "$CERT_B64"    | base64 --decode > "$CERT_PATH"
+          echo "$PROFILE_B64" | base64 --decode > "$PROFILE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
+          # Install the provisioning profile
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract UUID raw -)
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+          echo "Installed provisioning profile $UUID"
+
+      - name: Create ExportOptions.plist
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cat <<EOF > ios/ExportOptions.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>ad-hoc</string>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>compileBitcode</key>
+            <false/>
+          </dict>
+          </plist>
+          EOF
 
       - name: Generate iOS Config
-        run: |
-          flutter build ios --config-only --no-codesign
+        run: flutter build ios --config-only
 
-      - name: Build iOS IPA
+      - name: Build signed iOS IPA
         run: |
           flutter build ipa \
-            --debug \
-            --no-codesign \
+            --release \
+            --export-options-plist=ios/ExportOptions.plist \
             --dart-define=API_BASE_URL=https://api.softwork.elysium.example/ \
             --dart-define=FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} \
             --dart-define=FIREBASE_APP_ID=${{ secrets.FIREBASE_IOS_APP_ID }} \
@@ -168,29 +213,28 @@ jobs:
 
       - name: Check IPA
         run: |
+          echo "Listing exported IPAs:"
+          ls -la build/ios/ipa || true
           find build -name "*.ipa" -type f
 
       - name: Create Firebase credentials file
-        run: |
-          echo '${{ secrets.FIREBASE_CREDENTIALS }}' > firebase-key.json
+        run: echo '${{ secrets.FIREBASE_CREDENTIALS }}' > "$RUNNER_TEMP/firebase-key.json"
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
       - name: Upload iOS to Firebase App Distribution
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-key.json
         run: |
-          IPA_PATH=$(find build -name "*.ipa" | head -n 1)
-
+          set -euo pipefail
+          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -n 1)
           if [ -z "$IPA_PATH" ]; then
             echo "No IPA found"
             exit 1
           fi
-
           echo "Uploading $IPA_PATH"
-
           firebase appdistribution:distribute \
             "$IPA_PATH" \
             --app "${{ secrets.FIREBASE_IOS_APP_ID }}" \
             --groups "testers-ios"
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-key.json
