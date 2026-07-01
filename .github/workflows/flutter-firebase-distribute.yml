@@ -90,7 +90,7 @@ jobs:
             appdistribution:distribute
             build/app/outputs/flutter-apk/app-debug.apk
             --app ${{ secrets.FIREBASE_APP_ID }}
-            --groups testers-android-ios
+            --groups testers-android
         env:
           GCP_SA_KEY: ${{ secrets.FIREBASE_CREDENTIALS }}
 
@@ -191,6 +191,6 @@ jobs:
           firebase appdistribution:distribute \
             "$IPA_PATH" \
             --app "${{ secrets.FIREBASE_IOS_APP_ID }}" \
-            --groups "testers-android-ios"
+            --groups "testers-ios"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-key.json
