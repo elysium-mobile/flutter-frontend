@@ -218,4 +218,61 @@ abstract final class AppStrings {
   /// Empty-state copy for the reports tab.
   static String get noReportsYet =>
       Intl.message('No reports yet.', name: 'noReportsYet');
+
+  // --- HR Analytics (Reports) -------------------------------------------------
+
+  /// HR Analytics screen header title.
+  static String get hrReportsTitle =>
+      Intl.message('Reports', name: 'hrReportsTitle');
+
+  /// Team selector placeholder / label ("Choose team").
+  static String get chooseTeam =>
+      Intl.message('Choose team', name: 'chooseTeam');
+
+  /// Prompt shown when no team has been selected yet.
+  static String get chooseTeamPrompt => Intl.message(
+        'Choose a team to view its metrics.',
+        name: 'chooseTeamPrompt',
+      );
+
+  /// Empty-state copy when the HR specialist has no assigned teams.
+  static String get noAssignedTeams => Intl.message(
+        'No assigned teams yet.',
+        name: 'noAssignedTeams',
+      );
+
+  /// "Average wellbeing" metric box label.
+  static String get averageWellbeing =>
+      Intl.message('Average wellbeing', name: 'averageWellbeing');
+
+  /// "Members" metric box label.
+  static String get members => Intl.message('Members', name: 'members');
+
+  /// "Forum reports" metric box label.
+  static String get forumReports =>
+      Intl.message('Forum reports', name: 'forumReports');
+
+  /// "Completed surveys" metric box label.
+  static String get completedSurveys =>
+      Intl.message('Completed surveys', name: 'completedSurveys');
+
+  /// Historical progress chart title.
+  static String get historicalProgress =>
+      Intl.message('Historical progress', name: 'historicalProgress');
+
+  /// Empty-state copy for the historical progress chart.
+  static String get noHistoryData => Intl.message(
+        'No historical data available.',
+        name: 'noHistoryData',
+      );
+
+  /// Primary "Generate report" footer button label.
+  static String get generateReport =>
+      Intl.message('Generate report', name: 'generateReport');
+
+  /// Snackbar acknowledgement after requesting a report.
+  static String get reportRequested => Intl.message(
+        'Report generation requested.',
+        name: 'reportRequested',
+      );
 }

@@ -12,9 +12,9 @@ import 'domain/stores/authentication_store.dart';
 /// Wires the feature's object graph into [GetIt], respecting the hexagonal
 /// dependency direction: blocs depend only on the [AuthenticationStore] port.
 ///
-/// The concrete [AuthenticationStore] adapter (live vs. mock) is selected by the
-/// flavor-aware service locator and must be registered separately; this method
-/// only registers the web service and the dependent blocs.
+/// The concrete [AuthenticationStore] adapter is registered by the production
+/// service locator; this method only registers the web service and the
+/// dependent blocs.
 ///
 /// The web service is a lazy singleton (shared infrastructure); the session
 /// machine is a lazy singleton (long-lived), while the login/registration blocs

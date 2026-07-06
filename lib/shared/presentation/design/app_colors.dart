@@ -29,6 +29,12 @@ abstract final class AppColors {
   /// Semantic danger color.
   static const Color danger = Color(0xFFC94040);
 
+  /// Semantic positive color — Green (workforce headcount metric).
+  static const Color green = Color(0xFF2E9E5B);
+
+  /// Accent color — Purple (survey-completion metric).
+  static const Color purple = Color(0xFF6B4EA0);
+
   /// Plain white surface.
   static const Color surface = Color(0xFFFFFFFF);
 }

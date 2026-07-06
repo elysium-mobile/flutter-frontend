@@ -1,22 +1,23 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get_it/get_it.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
+import 'dashboard/dashboard_dependencies.dart';
 import 'iam/data/network/iam_web_service.dart';
 import 'iam/data/stores/firebase_authentication_store.dart';
-import 'iam/data/stores/mock_authentication_store.dart';
 import 'iam/domain/stores/authentication_store.dart';
 import 'iam/iam_dependencies.dart';
-import 'shared/data/network/environment_config.dart';
+import 'shared/data/local/app_database.dart';
 import 'shared/data/pref/shared_preferences_adapter.dart';
 import 'shared/shared_dependencies.dart';
 
-/// Application-wide service locator and flavor-aware composition root.
+/// Application-wide service locator and production composition root.
 ///
-/// Resolves the global [GetIt] graph and applies the Environment-Driven Mock
-/// Flavor strategy: it queries [EnvironmentConfig.isMockMode] to bind the
-/// appropriate concrete [AuthenticationStore] adapter — a fully offline
-/// [MockAuthenticationStore] for the Local/Develop flavor, or the live
-/// [FirebaseAuthenticationStore] for Production — while every other dependency
-/// is registered uniformly across flavors.
+/// Registers the definitive object graph wired exclusively to live
+/// infrastructure — the Drift/sqlite3 [AppDatabase], the centralized network
+/// client, and the [FirebaseAuthenticationStore] adapter. There is no flavor
+/// branching: every dependency resolves to its concrete production
+/// implementation.
 abstract final class ServiceLocator {
   /// Initializes the global locator graph.
   ///
@@ -24,29 +25,36 @@ abstract final class ServiceLocator {
   static Future<void> init({GetIt? locator}) async {
     final sl = locator ?? GetIt.instance;
 
-    // Shared cross-cutting infrastructure (cache + centralized network client).
+    // Local relational cache (Drift over native sqlite3).
+    sl.registerLazySingleton<AppDatabase>(AppDatabase.new);
+
+    // Shared cross-cutting infrastructure (key-value cache + ApiClient).
     final preferences = await SharedPreferencesAdapter.create();
     SharedDependencies.register(sl, preferences);
 
-    // Flavor-polymorphic domain port: the only registration that diverges.
-    _registerAuthenticationStore(sl);
-
-    // IAM web service and blocs (flavor-agnostic; depend only on the port).
+    // IAM web service and blocs (depend only on the AuthenticationStore port).
     IamDependencies.register(sl);
+
+    // Dashboard (HR Analytics) web service, repository and bloc.
+    DashboardDependencies.register(sl);
+
+    // Production authentication adapter.
+    _registerAuthenticationStore(sl);
   }
 
-  /// Binds the concrete [AuthenticationStore] selected by the active flavor.
+  /// Registers the sole production [AuthenticationStore] implementation.
+  ///
+  /// The factory injects the live [FirebaseAuth.instance] and
+  /// [GoogleSignIn.instance] singletons alongside the resolved [AppDatabase]
+  /// (for session persistence) and [IamWebService] (for the backend credential
+  /// exchange).
   static void _registerAuthenticationStore(GetIt sl) {
-    if (EnvironmentConfig.isMockMode) {
-      sl.registerLazySingleton<AuthenticationStore>(
-        MockAuthenticationStore.new,
-      );
-      return;
-    }
     sl.registerLazySingleton<AuthenticationStore>(
       () => FirebaseAuthenticationStore(
         webService: sl<IamWebService>(),
-        preferences: sl<SharedPreferencesAdapter>(),
+        database: sl<AppDatabase>(),
+        firebaseAuth: FirebaseAuth.instance,
+        googleSignIn: GoogleSignIn.instance,
       ),
     );
   }

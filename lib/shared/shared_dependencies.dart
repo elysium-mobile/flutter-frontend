@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 
+import 'data/local/app_database.dart';
 import 'data/network/api_client.dart';
 import 'data/pref/shared_preferences_adapter.dart';
 
@@ -19,8 +20,8 @@ abstract final class SharedDependencies {
       ..registerSingleton<SharedPreferencesAdapter>(preferences)
       ..registerLazySingleton<ApiClient>(
         () => ApiClient(
-          tokenProvider: () async =>
-              sl<SharedPreferencesAdapter>().sessionToken,
+          // Bearer token is sourced from the persisted Drift session row.
+          tokenProvider: () async => sl<AppDatabase>().readAccessToken(),
         ),
       );
   }

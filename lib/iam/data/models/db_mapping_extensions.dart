@@ -5,14 +5,14 @@ import '../../../shared/domain/models/id.dart';
 import '../../domain/models/auth_session.dart';
 import '../../domain/models/user.dart';
 
-/// Structural mapping from a persisted [CachedSession] database row to the pure
-/// domain [AuthSession] model.
+/// Structural mapping from a persisted [CachedSessionRow] database row to the
+/// pure domain [AuthSession] model.
 ///
 /// Keeps the relational boundary out of the domain: the generated Drift data
 /// class is translated here rather than inside the entity itself. The cached row
 /// only retains the credential material, so the rehydrated [User] carries the
 /// stored identifier with empty profile fields until a fresh profile is fetched.
-extension CachedSessionRowMapper on CachedSession {
+extension CachedSessionRowMapper on CachedSessionRow {
   /// Rehydrates a domain [AuthSession] from this cached database row.
   AuthSession toDomain() {
     return AuthSession(

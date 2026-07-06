@@ -82,6 +82,19 @@ class ApiClient {
     return _send('GET', path, queryParameters: queryParameters);
   }
 
+  /// Performs an authenticated `GET` against an endpoint that returns a JSON
+  /// array (e.g. the ELYSIUM collection resources) and returns the decoded list.
+  ///
+  /// A non-array 2xx body is normalized to an empty list rather than throwing,
+  /// keeping list consumers total.
+  Future<List<dynamic>> getList(
+    String path, {
+    Map<String, String>? queryParameters,
+  }) async {
+    final decoded = await _sendRaw('GET', path, queryParameters: queryParameters);
+    return decoded is List ? decoded : const <dynamic>[];
+  }
+
   /// Performs an authenticated `POST` and returns the decoded JSON object.
   Future<Map<String, dynamic>> post(
     String path, {
@@ -103,8 +116,31 @@ class ApiClient {
     return _send('DELETE', path);
   }
 
-  /// Core request pipeline shared by every verb.
+  /// Object-returning request pipeline shared by the JSON-object verbs.
+  ///
+  /// Delegates transport to [_sendRaw] and normalizes a non-object 2xx body
+  /// (e.g. an empty response) into an empty map.
   Future<Map<String, dynamic>> _send(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, String>? queryParameters,
+  }) async {
+    final decoded = await _sendRaw(
+      method,
+      path,
+      body: body,
+      queryParameters: queryParameters,
+    );
+    return decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
+  }
+
+  /// Core transport pipeline shared by every verb.
+  ///
+  /// Returns the raw decoded JSON value (`Map`, `List`, or `null` for an empty
+  /// body) so both object and collection callers can share a single request,
+  /// header, timeout and error-normalization path.
+  Future<dynamic> _sendRaw(
     String method,
     String path, {
     Map<String, dynamic>? body,
@@ -176,14 +212,15 @@ class ApiClient {
     return headers;
   }
 
-  /// Decodes a successful response or throws a normalized [ApiException].
-  Map<String, dynamic> _decode(http.Response response, Uri uri) {
+  /// Decodes a successful response into its raw JSON value (`Map`, `List`, or
+  /// `null` for an empty body), or throws a normalized [ApiException].
+  dynamic _decode(http.Response response, Uri uri) {
     final status = response.statusCode;
     if (status >= 200 && status < 300) {
       if (response.body.isEmpty) {
-        return const <String, dynamic>{};
+        return null;
       }
-      return jsonDecode(response.body) as Map<String, dynamic>;
+      return jsonDecode(response.body);
     }
     throw ApiException(
       statusCode: status,

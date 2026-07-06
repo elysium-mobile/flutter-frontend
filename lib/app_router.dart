@@ -1,8 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
+import 'dashboard/application/bloc/hr_reports_bloc.dart';
+import 'dashboard/presentation/views/hr_reports_view.dart';
 import 'iam/application/bloc/session_bloc.dart';
 import 'iam/presentation/navigation/iam_router.dart';
 import 'iam/presentation/navigation/iam_routes.dart';
@@ -13,7 +17,6 @@ import 'iam/presentation/views/user_registered_view.dart';
 import 'shared/presentation/views/alerts_view.dart';
 import 'shared/presentation/views/home_shell_view.dart';
 import 'shared/presentation/views/main_menu_view.dart';
-import 'shared/presentation/views/reports_view.dart';
 
 /// Route catalogue owned by the authenticated shell (shared destinations).
 ///
@@ -114,7 +117,11 @@ abstract final class AppRouter {
                 GoRoute(
                   path: AppRoutes.reportsPath,
                   name: AppRoutes.reportsName,
-                  builder: (context, state) => const ReportsView(),
+                  builder: (context, state) => BlocProvider<HrReportsBloc>(
+                    create: (_) => GetIt.instance<HrReportsBloc>()
+                      ..add(const HrReportsStarted()),
+                    child: const HrReportsView(),
+                  ),
                 ),
               ],
             ),

@@ -1,6 +1,8 @@
 import 'package:json_annotation/json_annotation.dart';
 
+import '../../../shared/domain/models/id.dart';
 import '../../domain/models/auth_session.dart';
+import '../../domain/models/user.dart';
 
 part 'auth_session_response.g.dart';
 
@@ -42,9 +44,16 @@ class AuthSessionResponse {
   factory AuthSessionResponse.fromJson(Map<String, dynamic> json) =>
       _$AuthSessionResponseFromJson(json);
 
-  /// Projects this raw response onto the pure-domain [AuthSession] entity.
-  ///
-  /// Signature only: the mapping body is intentionally left for the automation
-  /// agent to generate.
-  AuthSession toDomain() => throw UnimplementedError();
+  /// Projects this raw response onto the pure-domain [AuthSession] entity,
+  /// wrapping the raw identifier in the shared [Id] value object.
+  AuthSession toDomain() {
+    return AuthSession(
+      user: User(
+        id: Id(userId),
+        username: username,
+        email: email,
+      ),
+      accessToken: accessToken,
+    );
+  }
 }

@@ -15,9 +15,9 @@ import 'shared/presentation/design/app_theme.dart';
 
 /// Application entry point — the absolute initialization layer.
 ///
-/// Bootstraps the Flutter binding, initializes Firebase (skipped in the mock
-/// flavor), resolves the flavor-aware service locator, builds the dual-router
-/// from the long-lived [SessionBloc], and runs the app shell.
+/// Bootstraps the Flutter binding, initializes Firebase, resolves the
+/// production service locator, builds the dual-router from the long-lived
+/// [SessionBloc], and runs the app shell.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppTheme.ensureFontsLoaded();
@@ -43,10 +43,6 @@ Future<void> main() async {
 /// will then fail at call time rather than preventing startup, which keeps
 /// Firebase-less development pipelines runnable.
 Future<void> _initializeFirebase() async {
-  // The Local/Develop mock flavor is fully offline; Firebase is not required.
-  if (EnvironmentConfig.isMockMode) {
-    return;
-  }
   try {
     if (!EnvironmentConfig.hasFirebaseConfiguration) {
       await Firebase.initializeApp(
