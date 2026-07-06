@@ -220,59 +220,63 @@ abstract final class AppStrings {
       Intl.message('No reports yet.', name: 'noReportsYet');
 
   // --- HR Analytics (Reports) -------------------------------------------------
+  //
+  // The user-facing values below are the localized (Spanish) UI strings taken
+  // verbatim from the approved HR Analytics mockup. They are intentionally
+  // exempt from the English-only rule (which still governs identifiers and
+  // dartdoc) and remain routed through the i18n engine rather than hard-coded.
 
-  /// HR Analytics screen header title.
+  /// HR Analytics screen header title (mockup: "Reportes").
   static String get hrReportsTitle =>
-      Intl.message('Reports', name: 'hrReportsTitle');
+      Intl.message('Reportes', name: 'hrReportsTitle');
 
-  /// Team selector placeholder / label ("Choose team").
+  /// Team selector container label (mockup: "Elegir equipo").
   static String get chooseTeam =>
-      Intl.message('Choose team', name: 'chooseTeam');
+      Intl.message('Elegir equipo', name: 'chooseTeam');
 
-  /// Prompt shown when no team has been selected yet.
-  static String get chooseTeamPrompt => Intl.message(
-        'Choose a team to view its metrics.',
-        name: 'chooseTeamPrompt',
-      );
+  /// Neutral "no team selected" option shown in the selector (mockup:
+  /// "Ninguno"). Selecting it collapses the entire metrics canvas.
+  static String get noneOption =>
+      Intl.message('Ninguno', name: 'noneOption');
 
   /// Empty-state copy when the HR specialist has no assigned teams.
   static String get noAssignedTeams => Intl.message(
-        'No assigned teams yet.',
+        'No hay equipos asignados.',
         name: 'noAssignedTeams',
       );
 
-  /// "Average wellbeing" metric box label.
+  /// Average-wellbeing metric box label (mockup: "Bienestar promedio").
   static String get averageWellbeing =>
-      Intl.message('Average wellbeing', name: 'averageWellbeing');
+      Intl.message('Bienestar promedio', name: 'averageWellbeing');
 
-  /// "Members" metric box label.
-  static String get members => Intl.message('Members', name: 'members');
+  /// Members metric box label (mockup: "Integrantes").
+  static String get members => Intl.message('Integrantes', name: 'members');
 
-  /// "Forum reports" metric box label.
+  /// Forum-reports metric box label (mockup: "Reportes en foro").
   static String get forumReports =>
-      Intl.message('Forum reports', name: 'forumReports');
+      Intl.message('Reportes en foro', name: 'forumReports');
 
-  /// "Completed surveys" metric box label.
+  /// Completed-surveys metric box label (mockup: "Encuestas realizadas").
   static String get completedSurveys =>
-      Intl.message('Completed surveys', name: 'completedSurveys');
+      Intl.message('Encuestas realizadas', name: 'completedSurveys');
 
-  /// Historical progress chart title.
+  /// Historical progress chart title (mockup: "Progreso histórico").
   static String get historicalProgress =>
-      Intl.message('Historical progress', name: 'historicalProgress');
+      Intl.message('Progreso histórico', name: 'historicalProgress');
 
   /// Empty-state copy for the historical progress chart.
   static String get noHistoryData => Intl.message(
-        'No historical data available.',
+        'No hay datos históricos disponibles.',
         name: 'noHistoryData',
       );
 
-  /// Primary "Generate report" footer button label.
+  /// Primary footer button label (mockup: "Generar reporte").
   static String get generateReport =>
-      Intl.message('Generate report', name: 'generateReport');
+      Intl.message('Generar reporte', name: 'generateReport');
 
   /// Snackbar acknowledgement after requesting a report.
   static String get reportRequested => Intl.message(
-        'Report generation requested.',
+        'Generación de reporte solicitada.',
         name: 'reportRequested',
       );
 }

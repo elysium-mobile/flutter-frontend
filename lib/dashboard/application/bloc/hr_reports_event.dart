@@ -28,6 +28,12 @@ final class HrReportsTeamSelected extends HrReportsEvent {
   List<Object?> get props => <Object?>[team];
 }
 
+/// The neutral "Ninguno" (none) option was chosen; collapse the metrics canvas.
+final class HrReportsSelectionCleared extends HrReportsEvent {
+  /// Creates an [HrReportsSelectionCleared].
+  const HrReportsSelectionCleared();
+}
+
 /// The "Generate report" footer button was pressed.
 final class HrReportsReportRequested extends HrReportsEvent {
   /// Creates an [HrReportsReportRequested].

@@ -11,13 +11,13 @@ import '../../domain/models/metric_point.dart';
 import '../../domain/models/team_metrics.dart';
 import '../../domain/models/work_team.dart';
 
-/// HR Analytics ("Reports") panel — the fourth tab of the authenticated shell.
+/// HR Analytics ("Reportes") panel — the fourth tab of the authenticated shell.
 ///
-/// Renders, top to bottom: a "Choose team" selector populated with the assigned
-/// teams, a quad panel of high-contrast metric boxes, a historical progress line
-/// chart, and a full-width "Generate report" action button. All state is owned
-/// by [HrReportsBloc]; this view only reacts to [HrReportsState] and holds no
-/// business logic. Every user-facing string flows through [AppStrings].
+/// The layout is strictly state-driven: it renders the "Elegir equipo" selector
+/// permanently, and mounts the metrics canvas (quad panel, historical chart and
+/// action footer) only while a concrete team is selected. Choosing the neutral
+/// "Ninguno" option collapses the entire lower section out of the widget tree.
+/// All state is owned by [HrReportsBloc]; this view holds no business logic.
 class HrReportsView extends StatelessWidget {
   /// Creates an [HrReportsView].
   const HrReportsView({super.key});
@@ -66,7 +66,8 @@ class HrReportsView extends StatelessWidget {
   }
 }
 
-/// Scrollable content column composing the selector, metrics, chart and footer.
+/// Scrollable content column: the always-present selector plus the reactively
+/// mounted metrics canvas.
 class _ReportsBody extends StatelessWidget {
   const _ReportsBody({required this.state});
 
@@ -80,6 +81,8 @@ class _ReportsBody extends StatelessWidget {
       );
     }
 
+    final WorkTeam? selectedTeam = state.selectedTeam;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -90,86 +93,149 @@ class _ReportsBody extends StatelessWidget {
         children: <Widget>[
           _TeamSelector(
             teams: state.teams,
-            selectedTeam: state.selectedTeam,
+            selectedTeam: selectedTeam,
             onSelected: (WorkTeam team) => context
                 .read<HrReportsBloc>()
                 .add(HrReportsTeamSelected(team)),
+            onCleared: () => context
+                .read<HrReportsBloc>()
+                .add(const HrReportsSelectionCleared()),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          if (state.selectedTeam == null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-              child: Text(
-                AppStrings.chooseTeamPrompt,
-                textAlign: TextAlign.center,
-                style: AppTypography.subtitle,
-              ),
-            )
-          else ...<Widget>[
-            _QuadMetricsPanel(
-              metrics: state.metrics,
-              isLoading: state.isLoadingMetrics,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _HistoricalProgressChart(history: state.metrics.history),
-            const SizedBox(height: AppSpacing.lg),
-            GradientButton(
-              label: AppStrings.generateReport,
-              onPressed: () => context
-                  .read<HrReportsBloc>()
-                  .add(const HrReportsReportRequested()),
-            ),
-          ],
+          // Reactively mounts/collapses the metrics canvas on selection change.
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SizeTransition(
+                  sizeFactor: animation,
+                  alignment: Alignment.topCenter,
+                  child: child,
+                ),
+              );
+            },
+            child: selectedTeam == null
+                ? const SizedBox.shrink(key: ValueKey<String>('none'))
+                : _MetricsCanvas(
+                    key: ValueKey<String>(selectedTeam.id.value),
+                    metrics: state.metrics,
+                    isLoading: state.isLoadingMetrics,
+                    onGenerate: () => context
+                        .read<HrReportsBloc>()
+                        .add(const HrReportsReportRequested()),
+                  ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// Stylized "Choose team" dropdown selector populated with the assigned teams.
+/// Comprehensive metrics canvas mounted only while a concrete team is selected.
+///
+/// Bundles the quad-metrics panel, the historical progress chart and the
+/// "Generar reporte" footer button into a single animatable subtree.
+class _MetricsCanvas extends StatelessWidget {
+  const _MetricsCanvas({
+    super.key,
+    required this.metrics,
+    required this.isLoading,
+    required this.onGenerate,
+  });
+
+  final TeamMetrics metrics;
+  final bool isLoading;
+  final VoidCallback onGenerate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        const SizedBox(height: AppSpacing.lg),
+        _QuadMetricsPanel(metrics: metrics, isLoading: isLoading),
+        const SizedBox(height: AppSpacing.lg),
+        _HistoricalProgressChart(history: metrics.history),
+        const SizedBox(height: AppSpacing.lg),
+        GradientButton(
+          label: AppStrings.generateReport,
+          onPressed: onGenerate,
+        ),
+      ],
+    );
+  }
+}
+
+/// Stylized "Elegir equipo" dropdown selector.
+///
+/// Presents the neutral "Ninguno" entry followed by every assigned team; the
+/// null value maps to "Ninguno" and collapses the metrics canvas.
 class _TeamSelector extends StatelessWidget {
   const _TeamSelector({
     required this.teams,
     required this.selectedTeam,
     required this.onSelected,
+    required this.onCleared,
   });
 
   final List<WorkTeam> teams;
   final WorkTeam? selectedTeam;
   final ValueChanged<WorkTeam> onSelected;
+  final VoidCallback onCleared;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.accentWhite,
-        borderRadius: BorderRadius.circular(AppRadii.input),
-        border: Border.all(color: AppColors.mint),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<WorkTeam>(
-          value: selectedTeam,
-          isExpanded: true,
-          icon: const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: AppColors.primaryNavy,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          AppStrings.chooseTeam,
+          style: AppTypography.caption.copyWith(
+            color: AppColors.dark.withValues(alpha: 0.6),
           ),
-          hint: Text(AppStrings.chooseTeam, style: AppTypography.input),
-          style: AppTypography.input,
-          borderRadius: BorderRadius.circular(AppRadii.input),
-          items: <DropdownMenuItem<WorkTeam>>[
-            for (final WorkTeam team in teams)
-              DropdownMenuItem<WorkTeam>(
-                value: team,
-                child: Text(team.teamName, style: AppTypography.input),
-              ),
-          ],
-          onChanged: (WorkTeam? team) {
-            if (team != null) onSelected(team);
-          },
         ),
-      ),
+        const SizedBox(height: AppSpacing.xs),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.accentWhite,
+            borderRadius: BorderRadius.circular(AppRadii.input),
+            border: Border.all(color: AppColors.mint),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<WorkTeam?>(
+              value: selectedTeam,
+              isExpanded: true,
+              icon: const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppColors.primaryNavy,
+              ),
+              style: AppTypography.input,
+              borderRadius: BorderRadius.circular(AppRadii.input),
+              items: <DropdownMenuItem<WorkTeam?>>[
+                DropdownMenuItem<WorkTeam?>(
+                  value: null,
+                  child: Text(AppStrings.noneOption, style: AppTypography.input),
+                ),
+                for (final WorkTeam team in teams)
+                  DropdownMenuItem<WorkTeam?>(
+                    value: team,
+                    child: Text(team.teamName, style: AppTypography.input),
+                  ),
+              ],
+              onChanged: (WorkTeam? team) {
+                if (team == null) {
+                  onCleared();
+                } else {
+                  onSelected(team);
+                }
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -364,7 +430,7 @@ class _LineChartPainter extends CustomPainter {
       axisPaint,
     );
 
-    // Gradient-consistent stroke path.
+    // Line path across the data nodes.
     final Path linePath = Path()..moveTo(points.first.dx, points.first.dy);
     for (final Offset point in points.skip(1)) {
       linePath.lineTo(point.dx, point.dy);

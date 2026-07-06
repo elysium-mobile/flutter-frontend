@@ -23,13 +23,17 @@ class HrReportsBloc extends Bloc<HrReportsEvent, HrReportsState> {
         super(const HrReportsState()) {
     on<HrReportsStarted>(_onStarted);
     on<HrReportsTeamSelected>(_onTeamSelected);
+    on<HrReportsSelectionCleared>(_onSelectionCleared);
     on<HrReportsReportRequested>(_onReportRequested);
   }
 
   final DashboardRepository _repository;
 
-  /// Loads the assigned teams and, when present, auto-selects the first one so
-  /// the metrics panel is never empty on entry.
+  /// Loads the assigned teams without auto-selecting one.
+  ///
+  /// The selector opens on the neutral "Ninguno" state ([selectedTeam] `null`),
+  /// so the metrics canvas stays collapsed until the HR specialist explicitly
+  /// picks a concrete team.
   Future<void> _onStarted(
     HrReportsStarted event,
     Emitter<HrReportsState> emit,
@@ -37,12 +41,12 @@ class HrReportsBloc extends Bloc<HrReportsEvent, HrReportsState> {
     emit(state.copyWith(status: HrReportsStatus.loadingTeams, errorMessage: null));
     try {
       final teams = await _repository.loadAssignedTeams();
-      if (teams.isEmpty) {
-        emit(state.copyWith(status: HrReportsStatus.ready, teams: teams));
-        return;
-      }
-      emit(state.copyWith(status: HrReportsStatus.ready, teams: teams));
-      add(HrReportsTeamSelected(teams.first));
+      emit(state.copyWith(
+        status: HrReportsStatus.ready,
+        teams: teams,
+        selectedTeam: null,
+        metrics: const TeamMetrics.empty(),
+      ));
     } catch (error) {
       emit(state.copyWith(
         status: HrReportsStatus.failure,
@@ -70,6 +74,19 @@ class HrReportsBloc extends Bloc<HrReportsEvent, HrReportsState> {
         errorMessage: error.toString(),
       ));
     }
+  }
+
+  /// Collapses the metrics canvas back to the neutral "Ninguno" state.
+  void _onSelectionCleared(
+    HrReportsSelectionCleared event,
+    Emitter<HrReportsState> emit,
+  ) {
+    emit(state.copyWith(
+      status: HrReportsStatus.ready,
+      selectedTeam: null,
+      metrics: const TeamMetrics.empty(),
+      errorMessage: null,
+    ));
   }
 
   /// Handles the "Generate report" footer action.
