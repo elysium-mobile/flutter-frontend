@@ -279,4 +279,105 @@ abstract final class AppStrings {
         'Generación de reporte solicitada.',
         name: 'reportRequested',
       );
+
+  // --- Payment (subscriptions & cards) ---------------------------------------
+  //
+  // As with the HR Analytics panel, the user-facing values below are the
+  // localized (Spanish) UI strings from the approved payment mockups. Only the
+  // display values are localized; identifiers and dartdoc remain English, and
+  // every string is still routed through the i18n engine.
+
+  /// Plan-selection screen title (mockup: "Membresías").
+  static String get membershipsTitle =>
+      Intl.message('Membresías', name: 'membershipsTitle');
+
+  /// Currency symbol prefix for prices (mockup: "S/.").
+  static String get currencySymbol =>
+      Intl.message('S/.', name: 'currencySymbol');
+
+  /// Per-month price suffix (mockup: "/mes").
+  static String get perMonth => Intl.message('/mes', name: 'perMonth');
+
+  /// Plan-card call-to-action (mockup: "Seleccionar plan").
+  static String get selectPlan =>
+      Intl.message('Seleccionar plan', name: 'selectPlan');
+
+  /// Plan feature — basic check-in (mockup: "Check-in básico").
+  static String get featureCheckInBasic =>
+      Intl.message('Check-in básico', name: 'featureCheckInBasic');
+
+  /// Plan feature — surveys (mockup: "Encuestas").
+  static String get featureSurveys =>
+      Intl.message('Encuestas', name: 'featureSurveys');
+
+  /// Plan feature — labor forum (mockup: "Foro laboral").
+  static String get featureLaborForum =>
+      Intl.message('Foro laboral', name: 'featureLaborForum');
+
+  /// Plan feature — HR messaging (mockup: "Mensajería HR").
+  static String get featureHrMessaging =>
+      Intl.message('Mensajería HR', name: 'featureHrMessaging');
+
+  /// Plan feature — encrypted reports (mockup: "Denuncias cifradas").
+  static String get featureEncryptedReports =>
+      Intl.message('Denuncias cifradas', name: 'featureEncryptedReports');
+
+  /// Payment-methods screen title (mockup: "Métodos de pago").
+  static String get paymentMethodsTitle =>
+      Intl.message('Métodos de pago', name: 'paymentMethodsTitle');
+
+  /// Billing banner label (mockup: "Próximo cobro").
+  static String get nextCharge =>
+      Intl.message('Próximo cobro', name: 'nextCharge');
+
+  /// Add-method button label (mockup: "Agregar método de pago").
+  static String get addPaymentMethod =>
+      Intl.message('Agregar método de pago', name: 'addPaymentMethod');
+
+  /// Cancel-subscription button label (mockup: "Cancelar suscripción").
+  static String get cancelSubscription =>
+      Intl.message('Cancelar suscripción', name: 'cancelSubscription');
+
+  /// Cardholder-name placeholder (mockup: "Nombre1").
+  static String get cardHolderHint =>
+      Intl.message('Nombre1', name: 'cardHolderHint');
+
+  /// Card-number placeholder (mockup: "5123 xxxx xxxx xxxx").
+  static String get cardNumberHint =>
+      Intl.message('5123 xxxx xxxx xxxx', name: 'cardNumberHint');
+
+  /// Expiry-date placeholder (mockup: "08 / 2028").
+  static String get expiryHint =>
+      Intl.message('08 / 2028', name: 'expiryHint');
+
+  /// Security-code placeholder (mockup: "715").
+  static String get cvvHint => Intl.message('715', name: 'cvvHint');
+
+  /// Save-card switch label (mockup: "Save this card").
+  static String get saveThisCard =>
+      Intl.message('Save this card', name: 'saveThisCard');
+
+  /// Add-method footer button (mockup: "Agregar método").
+  static String get addMethod =>
+      Intl.message('Agregar método', name: 'addMethod');
+
+  /// Success-screen title (mockup: "Membresía adquirida").
+  static String get membershipAcquired =>
+      Intl.message('Membresía adquirida', name: 'membershipAcquired');
+
+  /// Success-screen CTA that resets to the initial menu (mockup: "Menú inicial").
+  static String get initialMenu =>
+      Intl.message('Menú inicial', name: 'initialMenu');
+
+  /// Profile "Pago" section box title (mockup: "Pago").
+  static String get paymentSectionTitle =>
+      Intl.message('Pago', name: 'paymentSectionTitle');
+
+  /// Card-graphic "card holder" caption (mockup: "CARD HOLDER").
+  static String get cardHolderTag =>
+      Intl.message('CARD HOLDER', name: 'cardHolderTag');
+
+  /// Card-graphic "expires" caption (mockup: "EXPIRES").
+  static String get cardExpiresTag =>
+      Intl.message('EXPIRES', name: 'cardExpiresTag');
 }

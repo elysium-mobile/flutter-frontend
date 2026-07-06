@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'app_router.dart';
 import 'firebase_options.dart';
 import 'iam/application/bloc/session_bloc.dart';
+import 'payment/application/bloc/membership_gate_bloc.dart';
 import 'service_locator.dart';
 import 'shared/data/network/environment_config.dart';
 import 'shared/presentation/design/app_theme.dart';
@@ -26,9 +27,14 @@ Future<void> main() async {
   await ServiceLocator.init();
 
   final sessionBloc = GetIt.instance<SessionBloc>();
-  final router = AppRouter.create(sessionBloc);
+  final membershipGateBloc = GetIt.instance<MembershipGateBloc>();
+  final router = AppRouter.create(sessionBloc, membershipGateBloc);
 
-  runApp(SoftWorkApp(router: router, sessionBloc: sessionBloc));
+  runApp(SoftWorkApp(
+    router: router,
+    sessionBloc: sessionBloc,
+    membershipGateBloc: membershipGateBloc,
+  ));
 }
 
 /// Initializes Firebase from the centralized [EnvironmentConfig].
@@ -80,6 +86,7 @@ class SoftWorkApp extends StatelessWidget {
     super.key,
     required this.router,
     required this.sessionBloc,
+    required this.membershipGateBloc,
   });
 
   /// The configured dual-strategy router.
@@ -88,10 +95,17 @@ class SoftWorkApp extends StatelessWidget {
   /// The long-lived global session bloc, provided to the whole widget tree.
   final SessionBloc sessionBloc;
 
+  /// The long-lived membership gate bloc feeding the router's renewal guard and
+  /// consumed by the plan-selection success flow.
+  final MembershipGateBloc membershipGateBloc;
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<SessionBloc>.value(
-      value: sessionBloc,
+    return MultiBlocProvider(
+      providers: <BlocProvider<dynamic>>[
+        BlocProvider<SessionBloc>.value(value: sessionBloc),
+        BlocProvider<MembershipGateBloc>.value(value: membershipGateBloc),
+      ],
       child: MaterialApp.router(
         title: 'SoftWork',
         debugShowCheckedModeBanner: false,

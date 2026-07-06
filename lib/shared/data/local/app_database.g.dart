@@ -1283,6 +1283,820 @@ class CachedWorkTeamsCompanion extends UpdateCompanion<CachedWorkTeamRow> {
   }
 }
 
+class $SavedCardsTable extends SavedCards
+    with TableInfo<$SavedCardsTable, SavedCardRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SavedCardsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _cardHolderMeta = const VerificationMeta(
+    'cardHolder',
+  );
+  @override
+  late final GeneratedColumn<String> cardHolder = GeneratedColumn<String>(
+    'card_holder',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _last4Meta = const VerificationMeta('last4');
+  @override
+  late final GeneratedColumn<String> last4 = GeneratedColumn<String>(
+    'last4',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 4,
+      maxTextLength: 4,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expiryMonthMeta = const VerificationMeta(
+    'expiryMonth',
+  );
+  @override
+  late final GeneratedColumn<String> expiryMonth = GeneratedColumn<String>(
+    'expiry_month',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expiryYearMeta = const VerificationMeta(
+    'expiryYear',
+  );
+  @override
+  late final GeneratedColumn<String> expiryYear = GeneratedColumn<String>(
+    'expiry_year',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _brandMeta = const VerificationMeta('brand');
+  @override
+  late final GeneratedColumn<String> brand = GeneratedColumn<String>(
+    'brand',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    cardHolder,
+    last4,
+    expiryMonth,
+    expiryYear,
+    brand,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'saved_cards';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SavedCardRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('card_holder')) {
+      context.handle(
+        _cardHolderMeta,
+        cardHolder.isAcceptableOrUnknown(data['card_holder']!, _cardHolderMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cardHolderMeta);
+    }
+    if (data.containsKey('last4')) {
+      context.handle(
+        _last4Meta,
+        last4.isAcceptableOrUnknown(data['last4']!, _last4Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_last4Meta);
+    }
+    if (data.containsKey('expiry_month')) {
+      context.handle(
+        _expiryMonthMeta,
+        expiryMonth.isAcceptableOrUnknown(
+          data['expiry_month']!,
+          _expiryMonthMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_expiryMonthMeta);
+    }
+    if (data.containsKey('expiry_year')) {
+      context.handle(
+        _expiryYearMeta,
+        expiryYear.isAcceptableOrUnknown(data['expiry_year']!, _expiryYearMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_expiryYearMeta);
+    }
+    if (data.containsKey('brand')) {
+      context.handle(
+        _brandMeta,
+        brand.isAcceptableOrUnknown(data['brand']!, _brandMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_brandMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SavedCardRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SavedCardRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      cardHolder: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}card_holder'],
+      )!,
+      last4: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last4'],
+      )!,
+      expiryMonth: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}expiry_month'],
+      )!,
+      expiryYear: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}expiry_year'],
+      )!,
+      brand: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}brand'],
+      )!,
+    );
+  }
+
+  @override
+  $SavedCardsTable createAlias(String alias) {
+    return $SavedCardsTable(attachedDatabase, alias);
+  }
+}
+
+class SavedCardRow extends DataClass implements Insertable<SavedCardRow> {
+  /// Unique auto-incremented local identifier for the saved card.
+  final int id;
+
+  /// Name embossed on the card.
+  final String cardHolder;
+
+  /// Last four digits of the primary account number.
+  final String last4;
+
+  /// Two-digit expiry month.
+  final String expiryMonth;
+
+  /// Four-digit expiry year.
+  final String expiryYear;
+
+  /// Detected card brand (e.g. "VISA").
+  final String brand;
+  const SavedCardRow({
+    required this.id,
+    required this.cardHolder,
+    required this.last4,
+    required this.expiryMonth,
+    required this.expiryYear,
+    required this.brand,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['card_holder'] = Variable<String>(cardHolder);
+    map['last4'] = Variable<String>(last4);
+    map['expiry_month'] = Variable<String>(expiryMonth);
+    map['expiry_year'] = Variable<String>(expiryYear);
+    map['brand'] = Variable<String>(brand);
+    return map;
+  }
+
+  SavedCardsCompanion toCompanion(bool nullToAbsent) {
+    return SavedCardsCompanion(
+      id: Value(id),
+      cardHolder: Value(cardHolder),
+      last4: Value(last4),
+      expiryMonth: Value(expiryMonth),
+      expiryYear: Value(expiryYear),
+      brand: Value(brand),
+    );
+  }
+
+  factory SavedCardRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SavedCardRow(
+      id: serializer.fromJson<int>(json['id']),
+      cardHolder: serializer.fromJson<String>(json['cardHolder']),
+      last4: serializer.fromJson<String>(json['last4']),
+      expiryMonth: serializer.fromJson<String>(json['expiryMonth']),
+      expiryYear: serializer.fromJson<String>(json['expiryYear']),
+      brand: serializer.fromJson<String>(json['brand']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'cardHolder': serializer.toJson<String>(cardHolder),
+      'last4': serializer.toJson<String>(last4),
+      'expiryMonth': serializer.toJson<String>(expiryMonth),
+      'expiryYear': serializer.toJson<String>(expiryYear),
+      'brand': serializer.toJson<String>(brand),
+    };
+  }
+
+  SavedCardRow copyWith({
+    int? id,
+    String? cardHolder,
+    String? last4,
+    String? expiryMonth,
+    String? expiryYear,
+    String? brand,
+  }) => SavedCardRow(
+    id: id ?? this.id,
+    cardHolder: cardHolder ?? this.cardHolder,
+    last4: last4 ?? this.last4,
+    expiryMonth: expiryMonth ?? this.expiryMonth,
+    expiryYear: expiryYear ?? this.expiryYear,
+    brand: brand ?? this.brand,
+  );
+  SavedCardRow copyWithCompanion(SavedCardsCompanion data) {
+    return SavedCardRow(
+      id: data.id.present ? data.id.value : this.id,
+      cardHolder: data.cardHolder.present
+          ? data.cardHolder.value
+          : this.cardHolder,
+      last4: data.last4.present ? data.last4.value : this.last4,
+      expiryMonth: data.expiryMonth.present
+          ? data.expiryMonth.value
+          : this.expiryMonth,
+      expiryYear: data.expiryYear.present
+          ? data.expiryYear.value
+          : this.expiryYear,
+      brand: data.brand.present ? data.brand.value : this.brand,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SavedCardRow(')
+          ..write('id: $id, ')
+          ..write('cardHolder: $cardHolder, ')
+          ..write('last4: $last4, ')
+          ..write('expiryMonth: $expiryMonth, ')
+          ..write('expiryYear: $expiryYear, ')
+          ..write('brand: $brand')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, cardHolder, last4, expiryMonth, expiryYear, brand);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SavedCardRow &&
+          other.id == this.id &&
+          other.cardHolder == this.cardHolder &&
+          other.last4 == this.last4 &&
+          other.expiryMonth == this.expiryMonth &&
+          other.expiryYear == this.expiryYear &&
+          other.brand == this.brand);
+}
+
+class SavedCardsCompanion extends UpdateCompanion<SavedCardRow> {
+  final Value<int> id;
+  final Value<String> cardHolder;
+  final Value<String> last4;
+  final Value<String> expiryMonth;
+  final Value<String> expiryYear;
+  final Value<String> brand;
+  const SavedCardsCompanion({
+    this.id = const Value.absent(),
+    this.cardHolder = const Value.absent(),
+    this.last4 = const Value.absent(),
+    this.expiryMonth = const Value.absent(),
+    this.expiryYear = const Value.absent(),
+    this.brand = const Value.absent(),
+  });
+  SavedCardsCompanion.insert({
+    this.id = const Value.absent(),
+    required String cardHolder,
+    required String last4,
+    required String expiryMonth,
+    required String expiryYear,
+    required String brand,
+  }) : cardHolder = Value(cardHolder),
+       last4 = Value(last4),
+       expiryMonth = Value(expiryMonth),
+       expiryYear = Value(expiryYear),
+       brand = Value(brand);
+  static Insertable<SavedCardRow> custom({
+    Expression<int>? id,
+    Expression<String>? cardHolder,
+    Expression<String>? last4,
+    Expression<String>? expiryMonth,
+    Expression<String>? expiryYear,
+    Expression<String>? brand,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (cardHolder != null) 'card_holder': cardHolder,
+      if (last4 != null) 'last4': last4,
+      if (expiryMonth != null) 'expiry_month': expiryMonth,
+      if (expiryYear != null) 'expiry_year': expiryYear,
+      if (brand != null) 'brand': brand,
+    });
+  }
+
+  SavedCardsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? cardHolder,
+    Value<String>? last4,
+    Value<String>? expiryMonth,
+    Value<String>? expiryYear,
+    Value<String>? brand,
+  }) {
+    return SavedCardsCompanion(
+      id: id ?? this.id,
+      cardHolder: cardHolder ?? this.cardHolder,
+      last4: last4 ?? this.last4,
+      expiryMonth: expiryMonth ?? this.expiryMonth,
+      expiryYear: expiryYear ?? this.expiryYear,
+      brand: brand ?? this.brand,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (cardHolder.present) {
+      map['card_holder'] = Variable<String>(cardHolder.value);
+    }
+    if (last4.present) {
+      map['last4'] = Variable<String>(last4.value);
+    }
+    if (expiryMonth.present) {
+      map['expiry_month'] = Variable<String>(expiryMonth.value);
+    }
+    if (expiryYear.present) {
+      map['expiry_year'] = Variable<String>(expiryYear.value);
+    }
+    if (brand.present) {
+      map['brand'] = Variable<String>(brand.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SavedCardsCompanion(')
+          ..write('id: $id, ')
+          ..write('cardHolder: $cardHolder, ')
+          ..write('last4: $last4, ')
+          ..write('expiryMonth: $expiryMonth, ')
+          ..write('expiryYear: $expiryYear, ')
+          ..write('brand: $brand')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CachedMembershipsTable extends CachedMemberships
+    with TableInfo<$CachedMembershipsTable, CachedMembershipRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CachedMembershipsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _membershipIdMeta = const VerificationMeta(
+    'membershipId',
+  );
+  @override
+  late final GeneratedColumn<String> membershipId = GeneratedColumn<String>(
+    'membership_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _membershipStartMeta = const VerificationMeta(
+    'membershipStart',
+  );
+  @override
+  late final GeneratedColumn<String> membershipStart = GeneratedColumn<String>(
+    'membership_start',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _membershipOverMeta = const VerificationMeta(
+    'membershipOver',
+  );
+  @override
+  late final GeneratedColumn<String> membershipOver = GeneratedColumn<String>(
+    'membership_over',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _membershipStatusMeta = const VerificationMeta(
+    'membershipStatus',
+  );
+  @override
+  late final GeneratedColumn<String> membershipStatus = GeneratedColumn<String>(
+    'membership_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    membershipId,
+    membershipStart,
+    membershipOver,
+    membershipStatus,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cached_memberships';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CachedMembershipRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('membership_id')) {
+      context.handle(
+        _membershipIdMeta,
+        membershipId.isAcceptableOrUnknown(
+          data['membership_id']!,
+          _membershipIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_membershipIdMeta);
+    }
+    if (data.containsKey('membership_start')) {
+      context.handle(
+        _membershipStartMeta,
+        membershipStart.isAcceptableOrUnknown(
+          data['membership_start']!,
+          _membershipStartMeta,
+        ),
+      );
+    }
+    if (data.containsKey('membership_over')) {
+      context.handle(
+        _membershipOverMeta,
+        membershipOver.isAcceptableOrUnknown(
+          data['membership_over']!,
+          _membershipOverMeta,
+        ),
+      );
+    }
+    if (data.containsKey('membership_status')) {
+      context.handle(
+        _membershipStatusMeta,
+        membershipStatus.isAcceptableOrUnknown(
+          data['membership_status']!,
+          _membershipStatusMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_membershipStatusMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CachedMembershipRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedMembershipRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      membershipId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}membership_id'],
+      )!,
+      membershipStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}membership_start'],
+      ),
+      membershipOver: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}membership_over'],
+      ),
+      membershipStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}membership_status'],
+      )!,
+    );
+  }
+
+  @override
+  $CachedMembershipsTable createAlias(String alias) {
+    return $CachedMembershipsTable(attachedDatabase, alias);
+  }
+}
+
+class CachedMembershipRow extends DataClass
+    implements Insertable<CachedMembershipRow> {
+  /// Unique auto-incremented local identifier for the row.
+  final int id;
+
+  /// Server-driven membership identifier.
+  final String membershipId;
+
+  /// Inclusive start date (ISO-8601 day string), or `null` when unknown.
+  final String? membershipStart;
+
+  /// Exclusive end date (ISO-8601 day string), or `null` when unknown.
+  final String? membershipOver;
+
+  /// Raw lifecycle status token (e.g. `ACTIVE`).
+  final String membershipStatus;
+  const CachedMembershipRow({
+    required this.id,
+    required this.membershipId,
+    this.membershipStart,
+    this.membershipOver,
+    required this.membershipStatus,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['membership_id'] = Variable<String>(membershipId);
+    if (!nullToAbsent || membershipStart != null) {
+      map['membership_start'] = Variable<String>(membershipStart);
+    }
+    if (!nullToAbsent || membershipOver != null) {
+      map['membership_over'] = Variable<String>(membershipOver);
+    }
+    map['membership_status'] = Variable<String>(membershipStatus);
+    return map;
+  }
+
+  CachedMembershipsCompanion toCompanion(bool nullToAbsent) {
+    return CachedMembershipsCompanion(
+      id: Value(id),
+      membershipId: Value(membershipId),
+      membershipStart: membershipStart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(membershipStart),
+      membershipOver: membershipOver == null && nullToAbsent
+          ? const Value.absent()
+          : Value(membershipOver),
+      membershipStatus: Value(membershipStatus),
+    );
+  }
+
+  factory CachedMembershipRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedMembershipRow(
+      id: serializer.fromJson<int>(json['id']),
+      membershipId: serializer.fromJson<String>(json['membershipId']),
+      membershipStart: serializer.fromJson<String?>(json['membershipStart']),
+      membershipOver: serializer.fromJson<String?>(json['membershipOver']),
+      membershipStatus: serializer.fromJson<String>(json['membershipStatus']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'membershipId': serializer.toJson<String>(membershipId),
+      'membershipStart': serializer.toJson<String?>(membershipStart),
+      'membershipOver': serializer.toJson<String?>(membershipOver),
+      'membershipStatus': serializer.toJson<String>(membershipStatus),
+    };
+  }
+
+  CachedMembershipRow copyWith({
+    int? id,
+    String? membershipId,
+    Value<String?> membershipStart = const Value.absent(),
+    Value<String?> membershipOver = const Value.absent(),
+    String? membershipStatus,
+  }) => CachedMembershipRow(
+    id: id ?? this.id,
+    membershipId: membershipId ?? this.membershipId,
+    membershipStart: membershipStart.present
+        ? membershipStart.value
+        : this.membershipStart,
+    membershipOver: membershipOver.present
+        ? membershipOver.value
+        : this.membershipOver,
+    membershipStatus: membershipStatus ?? this.membershipStatus,
+  );
+  CachedMembershipRow copyWithCompanion(CachedMembershipsCompanion data) {
+    return CachedMembershipRow(
+      id: data.id.present ? data.id.value : this.id,
+      membershipId: data.membershipId.present
+          ? data.membershipId.value
+          : this.membershipId,
+      membershipStart: data.membershipStart.present
+          ? data.membershipStart.value
+          : this.membershipStart,
+      membershipOver: data.membershipOver.present
+          ? data.membershipOver.value
+          : this.membershipOver,
+      membershipStatus: data.membershipStatus.present
+          ? data.membershipStatus.value
+          : this.membershipStatus,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedMembershipRow(')
+          ..write('id: $id, ')
+          ..write('membershipId: $membershipId, ')
+          ..write('membershipStart: $membershipStart, ')
+          ..write('membershipOver: $membershipOver, ')
+          ..write('membershipStatus: $membershipStatus')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    membershipId,
+    membershipStart,
+    membershipOver,
+    membershipStatus,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedMembershipRow &&
+          other.id == this.id &&
+          other.membershipId == this.membershipId &&
+          other.membershipStart == this.membershipStart &&
+          other.membershipOver == this.membershipOver &&
+          other.membershipStatus == this.membershipStatus);
+}
+
+class CachedMembershipsCompanion extends UpdateCompanion<CachedMembershipRow> {
+  final Value<int> id;
+  final Value<String> membershipId;
+  final Value<String?> membershipStart;
+  final Value<String?> membershipOver;
+  final Value<String> membershipStatus;
+  const CachedMembershipsCompanion({
+    this.id = const Value.absent(),
+    this.membershipId = const Value.absent(),
+    this.membershipStart = const Value.absent(),
+    this.membershipOver = const Value.absent(),
+    this.membershipStatus = const Value.absent(),
+  });
+  CachedMembershipsCompanion.insert({
+    this.id = const Value.absent(),
+    required String membershipId,
+    this.membershipStart = const Value.absent(),
+    this.membershipOver = const Value.absent(),
+    required String membershipStatus,
+  }) : membershipId = Value(membershipId),
+       membershipStatus = Value(membershipStatus);
+  static Insertable<CachedMembershipRow> custom({
+    Expression<int>? id,
+    Expression<String>? membershipId,
+    Expression<String>? membershipStart,
+    Expression<String>? membershipOver,
+    Expression<String>? membershipStatus,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (membershipId != null) 'membership_id': membershipId,
+      if (membershipStart != null) 'membership_start': membershipStart,
+      if (membershipOver != null) 'membership_over': membershipOver,
+      if (membershipStatus != null) 'membership_status': membershipStatus,
+    });
+  }
+
+  CachedMembershipsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? membershipId,
+    Value<String?>? membershipStart,
+    Value<String?>? membershipOver,
+    Value<String>? membershipStatus,
+  }) {
+    return CachedMembershipsCompanion(
+      id: id ?? this.id,
+      membershipId: membershipId ?? this.membershipId,
+      membershipStart: membershipStart ?? this.membershipStart,
+      membershipOver: membershipOver ?? this.membershipOver,
+      membershipStatus: membershipStatus ?? this.membershipStatus,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (membershipId.present) {
+      map['membership_id'] = Variable<String>(membershipId.value);
+    }
+    if (membershipStart.present) {
+      map['membership_start'] = Variable<String>(membershipStart.value);
+    }
+    if (membershipOver.present) {
+      map['membership_over'] = Variable<String>(membershipOver.value);
+    }
+    if (membershipStatus.present) {
+      map['membership_status'] = Variable<String>(membershipStatus.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedMembershipsCompanion(')
+          ..write('id: $id, ')
+          ..write('membershipId: $membershipId, ')
+          ..write('membershipStart: $membershipStart, ')
+          ..write('membershipOver: $membershipOver, ')
+          ..write('membershipStatus: $membershipStatus')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1295,6 +2109,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CachedWorkTeamsTable cachedWorkTeams = $CachedWorkTeamsTable(
     this,
   );
+  late final $SavedCardsTable savedCards = $SavedCardsTable(this);
+  late final $CachedMembershipsTable cachedMemberships =
+      $CachedMembershipsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1304,6 +2121,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cachedCompanies,
     cachedAreaCompanies,
     cachedWorkTeams,
+    savedCards,
+    cachedMemberships,
   ];
 }
 
@@ -2056,6 +2875,440 @@ typedef $$CachedWorkTeamsTableProcessedTableManager =
       CachedWorkTeamRow,
       PrefetchHooks Function()
     >;
+typedef $$SavedCardsTableCreateCompanionBuilder =
+    SavedCardsCompanion Function({
+      Value<int> id,
+      required String cardHolder,
+      required String last4,
+      required String expiryMonth,
+      required String expiryYear,
+      required String brand,
+    });
+typedef $$SavedCardsTableUpdateCompanionBuilder =
+    SavedCardsCompanion Function({
+      Value<int> id,
+      Value<String> cardHolder,
+      Value<String> last4,
+      Value<String> expiryMonth,
+      Value<String> expiryYear,
+      Value<String> brand,
+    });
+
+class $$SavedCardsTableFilterComposer
+    extends Composer<_$AppDatabase, $SavedCardsTable> {
+  $$SavedCardsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cardHolder => $composableBuilder(
+    column: $table.cardHolder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get last4 => $composableBuilder(
+    column: $table.last4,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get expiryMonth => $composableBuilder(
+    column: $table.expiryMonth,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get expiryYear => $composableBuilder(
+    column: $table.expiryYear,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get brand => $composableBuilder(
+    column: $table.brand,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SavedCardsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SavedCardsTable> {
+  $$SavedCardsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cardHolder => $composableBuilder(
+    column: $table.cardHolder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get last4 => $composableBuilder(
+    column: $table.last4,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get expiryMonth => $composableBuilder(
+    column: $table.expiryMonth,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get expiryYear => $composableBuilder(
+    column: $table.expiryYear,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get brand => $composableBuilder(
+    column: $table.brand,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SavedCardsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SavedCardsTable> {
+  $$SavedCardsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get cardHolder => $composableBuilder(
+    column: $table.cardHolder,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get last4 =>
+      $composableBuilder(column: $table.last4, builder: (column) => column);
+
+  GeneratedColumn<String> get expiryMonth => $composableBuilder(
+    column: $table.expiryMonth,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get expiryYear => $composableBuilder(
+    column: $table.expiryYear,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get brand =>
+      $composableBuilder(column: $table.brand, builder: (column) => column);
+}
+
+class $$SavedCardsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SavedCardsTable,
+          SavedCardRow,
+          $$SavedCardsTableFilterComposer,
+          $$SavedCardsTableOrderingComposer,
+          $$SavedCardsTableAnnotationComposer,
+          $$SavedCardsTableCreateCompanionBuilder,
+          $$SavedCardsTableUpdateCompanionBuilder,
+          (
+            SavedCardRow,
+            BaseReferences<_$AppDatabase, $SavedCardsTable, SavedCardRow>,
+          ),
+          SavedCardRow,
+          PrefetchHooks Function()
+        > {
+  $$SavedCardsTableTableManager(_$AppDatabase db, $SavedCardsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SavedCardsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SavedCardsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SavedCardsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> cardHolder = const Value.absent(),
+                Value<String> last4 = const Value.absent(),
+                Value<String> expiryMonth = const Value.absent(),
+                Value<String> expiryYear = const Value.absent(),
+                Value<String> brand = const Value.absent(),
+              }) => SavedCardsCompanion(
+                id: id,
+                cardHolder: cardHolder,
+                last4: last4,
+                expiryMonth: expiryMonth,
+                expiryYear: expiryYear,
+                brand: brand,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String cardHolder,
+                required String last4,
+                required String expiryMonth,
+                required String expiryYear,
+                required String brand,
+              }) => SavedCardsCompanion.insert(
+                id: id,
+                cardHolder: cardHolder,
+                last4: last4,
+                expiryMonth: expiryMonth,
+                expiryYear: expiryYear,
+                brand: brand,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SavedCardsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SavedCardsTable,
+      SavedCardRow,
+      $$SavedCardsTableFilterComposer,
+      $$SavedCardsTableOrderingComposer,
+      $$SavedCardsTableAnnotationComposer,
+      $$SavedCardsTableCreateCompanionBuilder,
+      $$SavedCardsTableUpdateCompanionBuilder,
+      (
+        SavedCardRow,
+        BaseReferences<_$AppDatabase, $SavedCardsTable, SavedCardRow>,
+      ),
+      SavedCardRow,
+      PrefetchHooks Function()
+    >;
+typedef $$CachedMembershipsTableCreateCompanionBuilder =
+    CachedMembershipsCompanion Function({
+      Value<int> id,
+      required String membershipId,
+      Value<String?> membershipStart,
+      Value<String?> membershipOver,
+      required String membershipStatus,
+    });
+typedef $$CachedMembershipsTableUpdateCompanionBuilder =
+    CachedMembershipsCompanion Function({
+      Value<int> id,
+      Value<String> membershipId,
+      Value<String?> membershipStart,
+      Value<String?> membershipOver,
+      Value<String> membershipStatus,
+    });
+
+class $$CachedMembershipsTableFilterComposer
+    extends Composer<_$AppDatabase, $CachedMembershipsTable> {
+  $$CachedMembershipsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get membershipId => $composableBuilder(
+    column: $table.membershipId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get membershipStart => $composableBuilder(
+    column: $table.membershipStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get membershipOver => $composableBuilder(
+    column: $table.membershipOver,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get membershipStatus => $composableBuilder(
+    column: $table.membershipStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CachedMembershipsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CachedMembershipsTable> {
+  $$CachedMembershipsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get membershipId => $composableBuilder(
+    column: $table.membershipId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get membershipStart => $composableBuilder(
+    column: $table.membershipStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get membershipOver => $composableBuilder(
+    column: $table.membershipOver,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get membershipStatus => $composableBuilder(
+    column: $table.membershipStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CachedMembershipsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CachedMembershipsTable> {
+  $$CachedMembershipsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get membershipId => $composableBuilder(
+    column: $table.membershipId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get membershipStart => $composableBuilder(
+    column: $table.membershipStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get membershipOver => $composableBuilder(
+    column: $table.membershipOver,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get membershipStatus => $composableBuilder(
+    column: $table.membershipStatus,
+    builder: (column) => column,
+  );
+}
+
+class $$CachedMembershipsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CachedMembershipsTable,
+          CachedMembershipRow,
+          $$CachedMembershipsTableFilterComposer,
+          $$CachedMembershipsTableOrderingComposer,
+          $$CachedMembershipsTableAnnotationComposer,
+          $$CachedMembershipsTableCreateCompanionBuilder,
+          $$CachedMembershipsTableUpdateCompanionBuilder,
+          (
+            CachedMembershipRow,
+            BaseReferences<
+              _$AppDatabase,
+              $CachedMembershipsTable,
+              CachedMembershipRow
+            >,
+          ),
+          CachedMembershipRow,
+          PrefetchHooks Function()
+        > {
+  $$CachedMembershipsTableTableManager(
+    _$AppDatabase db,
+    $CachedMembershipsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CachedMembershipsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CachedMembershipsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CachedMembershipsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> membershipId = const Value.absent(),
+                Value<String?> membershipStart = const Value.absent(),
+                Value<String?> membershipOver = const Value.absent(),
+                Value<String> membershipStatus = const Value.absent(),
+              }) => CachedMembershipsCompanion(
+                id: id,
+                membershipId: membershipId,
+                membershipStart: membershipStart,
+                membershipOver: membershipOver,
+                membershipStatus: membershipStatus,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String membershipId,
+                Value<String?> membershipStart = const Value.absent(),
+                Value<String?> membershipOver = const Value.absent(),
+                required String membershipStatus,
+              }) => CachedMembershipsCompanion.insert(
+                id: id,
+                membershipId: membershipId,
+                membershipStart: membershipStart,
+                membershipOver: membershipOver,
+                membershipStatus: membershipStatus,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CachedMembershipsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CachedMembershipsTable,
+      CachedMembershipRow,
+      $$CachedMembershipsTableFilterComposer,
+      $$CachedMembershipsTableOrderingComposer,
+      $$CachedMembershipsTableAnnotationComposer,
+      $$CachedMembershipsTableCreateCompanionBuilder,
+      $$CachedMembershipsTableUpdateCompanionBuilder,
+      (
+        CachedMembershipRow,
+        BaseReferences<
+          _$AppDatabase,
+          $CachedMembershipsTable,
+          CachedMembershipRow
+        >,
+      ),
+      CachedMembershipRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2068,4 +3321,8 @@ class $AppDatabaseManager {
       $$CachedAreaCompaniesTableTableManager(_db, _db.cachedAreaCompanies);
   $$CachedWorkTeamsTableTableManager get cachedWorkTeams =>
       $$CachedWorkTeamsTableTableManager(_db, _db.cachedWorkTeams);
+  $$SavedCardsTableTableManager get savedCards =>
+      $$SavedCardsTableTableManager(_db, _db.savedCards);
+  $$CachedMembershipsTableTableManager get cachedMemberships =>
+      $$CachedMembershipsTableTableManager(_db, _db.cachedMemberships);
 }

@@ -35,6 +35,9 @@ abstract final class AppColors {
   /// Accent color — Purple (survey-completion metric).
   static const Color purple = Color(0xFF6B4EA0);
 
+  /// Darker Teal shade used by the digital payment-card graphic.
+  static const Color tealDark = Color(0xFF0F7C7A);
+
   /// Plain white surface.
   static const Color surface = Color(0xFFFFFFFF);
 }
@@ -53,5 +56,20 @@ abstract final class AppGradients {
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
     colors: <Color>[AppColors.mint, AppColors.sky],
+  );
+
+  /// Diagonal gradient (Teal → Dark Teal) filling the digital payment-card
+  /// graphic on the card-provisioning screen.
+  static const LinearGradient paymentCard = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: <Color>[AppColors.teal, AppColors.tealDark],
+  );
+
+  /// Diagonal gradient (Navy → Teal) filling the billing overview banner.
+  static const LinearGradient billingBanner = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: <Color>[AppColors.primaryNavy, AppColors.teal],
   );
 }

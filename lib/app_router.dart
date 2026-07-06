@@ -14,6 +14,9 @@ import 'iam/presentation/views/profile_config_view.dart';
 import 'iam/presentation/views/profile_view.dart';
 import 'iam/presentation/views/session_started_view.dart';
 import 'iam/presentation/views/user_registered_view.dart';
+import 'payment/application/bloc/membership_gate_bloc.dart';
+import 'payment/presentation/navigation/payment_router.dart';
+import 'payment/presentation/navigation/payment_routes.dart';
 import 'shared/presentation/views/alerts_view.dart';
 import 'shared/presentation/views/home_shell_view.dart';
 import 'shared/presentation/views/main_menu_view.dart';
@@ -56,12 +59,23 @@ abstract final class AppRoutes {
 /// bloc's state stream so authentication transitions immediately re-evaluate the
 /// active shell.
 abstract final class AppRouter {
-  /// Creates the configured [GoRouter] bound to [sessionBloc].
-  static GoRouter create(SessionBloc sessionBloc) {
+  /// Creates the configured [GoRouter] bound to [sessionBloc] and
+  /// [membershipGateBloc].
+  ///
+  /// The redirect reacts to both the authentication state and the membership
+  /// gate, so a transition in either re-evaluates the active shell.
+  static GoRouter create(
+    SessionBloc sessionBloc,
+    MembershipGateBloc membershipGateBloc,
+  ) {
     return GoRouter(
       initialLocation: IamRoutes.loginPath,
-      refreshListenable: GoRouterRefreshStream(sessionBloc.stream),
-      redirect: (context, state) => _redirect(sessionBloc, state),
+      refreshListenable: Listenable.merge(<Listenable>[
+        GoRouterRefreshStream(sessionBloc.stream),
+        GoRouterRefreshStream(membershipGateBloc.stream),
+      ]),
+      redirect: (context, state) =>
+          _redirect(sessionBloc, membershipGateBloc, state),
       routes: <RouteBase>[
         // --- Unauthenticated shell --------------------------------------------
         ...IamRouter.authFlowRoutes(),
@@ -75,8 +89,11 @@ abstract final class AppRouter {
         GoRoute(
           path: IamRoutes.userRegisteredPath,
           name: IamRoutes.userRegisteredName,
+          // Entry guardrail: a newly registered user is forced into the plan
+          // selection lifecycle rather than the menu (a returning user with an
+          // active membership never reaches this interstitial).
           builder: (context, state) => UserRegisteredView(
-            onSignIn: () => context.goNamed(AppRoutes.menuName),
+            onSignIn: () => context.goNamed(PaymentRoutes.plansName),
           ),
         ),
 
@@ -134,12 +151,20 @@ abstract final class AppRouter {
           name: IamRoutes.profileEditName,
           builder: (context, state) => const ProfileConfigView(),
         ),
+
+        // --- Authenticated full-screen payment flow --------------------------
+        ...PaymentRouter.authenticatedRoutes(menuRouteName: AppRoutes.menuName),
       ],
     );
   }
 
-  /// Reactive redirection guard implementing the dual-shell switch.
-  static String? _redirect(SessionBloc sessionBloc, GoRouterState state) {
+  /// Reactive redirection guard implementing the dual-shell switch and the
+  /// expired-membership interceptor.
+  static String? _redirect(
+    SessionBloc sessionBloc,
+    MembershipGateBloc membershipGateBloc,
+    GoRouterState state,
+  ) {
     final bool isAuthenticated = sessionBloc.state.isAuthenticated;
     final String location = state.matchedLocation;
 
@@ -151,6 +176,14 @@ abstract final class AppRouter {
     if (!isAuthenticated) {
       // Unauthenticated users may only see the auth flow or success screens.
       return (isAuthFlow || isNeutral) ? null : IamRoutes.loginPath;
+    }
+
+    // Expired-membership interceptor: entering the profile configuration tab
+    // with a positively-expired membership blocks access and diverts into the
+    // renewal transaction flow. Indeterminate/new-user states never intercept.
+    if (location == IamRoutes.profileEditPath &&
+        membershipGateBloc.state.requiresRenewal) {
+      return PaymentRoutes.methodsPath;
     }
 
     // Authenticated users are bounced out of the login/registration screens.

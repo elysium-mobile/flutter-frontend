@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'dashboard/dashboard_dependencies.dart';
+import 'payment/payment_dependencies.dart';
 import 'iam/data/network/iam_web_service.dart';
 import 'iam/data/stores/firebase_authentication_store.dart';
 import 'iam/domain/stores/authentication_store.dart';
@@ -37,6 +38,9 @@ abstract final class ServiceLocator {
 
     // Dashboard (HR Analytics) web service, repository and bloc.
     DashboardDependencies.register(sl);
+
+    // Payment (subscriptions & cards) web service, repository and blocs.
+    PaymentDependencies.register(sl);
 
     // Production authentication adapter.
     _registerAuthenticationStore(sl);

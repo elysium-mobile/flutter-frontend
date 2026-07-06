@@ -107,6 +107,56 @@ class CachedWorkTeams extends Table {
   Set<Column> get primaryKey => <Column>{workTeamId};
 }
 
+/// Local store of the payment cards saved by the user.
+///
+/// For PCI-safety only non-sensitive display fields are persisted — the full
+/// primary account number (PAN) and the security code (CVV) are never written
+/// here. The auto-incremented [id] is the surrogate key.
+@DataClassName('SavedCardRow')
+class SavedCards extends Table {
+  /// Unique auto-incremented local identifier for the saved card.
+  IntColumn get id => integer().autoIncrement()();
+
+  /// Name embossed on the card.
+  TextColumn get cardHolder => text()();
+
+  /// Last four digits of the primary account number.
+  TextColumn get last4 => text().withLength(min: 4, max: 4)();
+
+  /// Two-digit expiry month.
+  TextColumn get expiryMonth => text()();
+
+  /// Four-digit expiry year.
+  TextColumn get expiryYear => text()();
+
+  /// Detected card brand (e.g. "VISA").
+  TextColumn get brand => text()();
+}
+
+/// Local single-row mirror of the membership currently synchronized on this
+/// device.
+///
+/// Drives the routing automation across cold starts: the gate reads this row to
+/// decide whether onboarding must be forced or a renewal intercepted. Like
+/// [CachedSessions], only the most recent row is retained.
+@DataClassName('CachedMembershipRow')
+class CachedMemberships extends Table {
+  /// Unique auto-incremented local identifier for the row.
+  IntColumn get id => integer().autoIncrement()();
+
+  /// Server-driven membership identifier.
+  TextColumn get membershipId => text()();
+
+  /// Inclusive start date (ISO-8601 day string), or `null` when unknown.
+  TextColumn get membershipStart => text().nullable()();
+
+  /// Exclusive end date (ISO-8601 day string), or `null` when unknown.
+  TextColumn get membershipOver => text().nullable()();
+
+  /// Raw lifecycle status token (e.g. `ACTIVE`).
+  TextColumn get membershipStatus => text()();
+}
+
 /// Local relational database access gateway built on the modern Drift ORM.
 ///
 /// Backed by the pure `sqlite3` 3.x engine bundled through native build hooks —
@@ -118,6 +168,8 @@ class CachedWorkTeams extends Table {
     CachedCompanies,
     CachedAreaCompanies,
     CachedWorkTeams,
+    SavedCards,
+    CachedMemberships,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -128,15 +180,15 @@ class AppDatabase extends _$AppDatabase {
   /// Current on-disk schema revision.
   ///
   /// Increment this and extend [migration] whenever the table structure
-  /// changes. Revision `2` introduced the HR Analytics dashboard mirror tables.
+  /// changes. Revision `2` introduced the HR Analytics dashboard mirror tables;
+  /// revision `3` introduced the payment saved-card and membership mirrors.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   /// Forward-only migration plan for the local cache.
   ///
   /// Fresh installs create every table via [Migrator.createAll]; existing
-  /// installs upgrading from schema `1` gain the dashboard mirror tables without
-  /// discarding the cached session.
+  /// installs gain each revision's new tables without discarding prior data.
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) => m.createAll(),
@@ -145,6 +197,10 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(cachedCompanies);
             await m.createTable(cachedAreaCompanies);
             await m.createTable(cachedWorkTeams);
+          }
+          if (from < 3) {
+            await m.createTable(savedCards);
+            await m.createTable(cachedMemberships);
           }
         },
       );
@@ -218,6 +274,41 @@ class AppDatabase extends _$AppDatabase {
   /// Returns every cached work-team row (used as an offline fallback).
   Future<List<CachedWorkTeamRow>> readWorkTeams() =>
       select(cachedWorkTeams).get();
+
+  /// Persists [companion] as a new saved card and returns its assigned id.
+  Future<int> insertSavedCard(SavedCardsCompanion companion) =>
+      into(savedCards).insert(companion);
+
+  /// Returns every saved card row, newest first.
+  Future<List<SavedCardRow>> readSavedCards() {
+    final query = select(savedCards)
+      ..orderBy(<OrderingTerm Function($SavedCardsTable)>[
+        (t) => OrderingTerm.desc(t.id),
+      ]);
+    return query.get();
+  }
+
+  /// Replaces the synchronized membership with [companion], retaining only the
+  /// most recent row (mirrors [cacheSession]).
+  Future<void> cacheMembership(CachedMembershipsCompanion companion) {
+    return transaction(() async {
+      await delete(cachedMemberships).go();
+      await into(cachedMemberships).insert(companion);
+    });
+  }
+
+  /// Returns the most recently synchronized membership row, or `null`.
+  Future<CachedMembershipRow?> readMembership() async {
+    final query = select(cachedMemberships)
+      ..orderBy(<OrderingTerm Function($CachedMembershipsTable)>[
+        (t) => OrderingTerm.desc(t.id),
+      ])
+      ..limit(1);
+    return query.getSingleOrNull();
+  }
+
+  /// Removes every synchronized membership row (invoked on cancellation).
+  Future<void> clearMembership() => delete(cachedMemberships).go();
 }
 
 /// Provisions the native file-backed executor that opens the sqlite3 engine.

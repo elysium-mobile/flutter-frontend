@@ -9,6 +9,7 @@ import '../../../shared/presentation/design/app_colors.dart';
 import '../../../shared/presentation/design/app_dimensions.dart';
 import '../../../shared/presentation/design/app_typography.dart';
 import '../../../shared/presentation/i18n/app_strings.dart';
+import '../../../payment/presentation/navigation/payment_routes.dart';
 import '../../application/bloc/session_bloc.dart';
 import '../navigation/iam_routes.dart';
 
@@ -210,40 +211,61 @@ class _InformationRow extends StatelessWidget {
   }
 }
 
-/// Separate "Payment Methods" card link row.
+/// "Pago" section box embedding the "Métodos de pago" navigation row that opens
+/// the subscription transaction interface (Screen 5).
 class _PaymentMethodsLink extends StatelessWidget {
   const _PaymentMethodsLink();
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.accentWhite,
-      borderRadius: BorderRadius.circular(AppRadii.card),
-      child: InkWell(
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadii.card),
-        onTap: () {},
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          child: Row(
-            children: <Widget>[
-              const Icon(
-                Icons.account_balance_wallet_outlined,
-                color: AppColors.primaryNavy,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  AppStrings.paymentMethods,
-                  style: AppTypography.label,
+        border: Border.all(color: AppColors.dark.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            child: Text(
+              AppStrings.paymentSectionTitle,
+              style: AppTypography.label,
+            ),
+          ),
+          Material(
+            color: AppColors.accentWhite,
+            borderRadius: BorderRadius.circular(AppRadii.button),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppRadii.button),
+              onTap: () => context.goNamed(PaymentRoutes.methodsName),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Row(
+                  children: <Widget>[
+                    const Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: AppColors.primaryNavy,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        AppStrings.paymentMethodsTitle,
+                        style: AppTypography.body,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.primaryNavy,
+                    ),
+                  ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.primaryNavy,
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
