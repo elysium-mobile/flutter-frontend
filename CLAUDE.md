@@ -393,6 +393,16 @@ Profile toggle ──add(LocaleSelected)──▶ LocaleBloc ──emit(LocaleSt
   (`GlobalMaterialLocalizations`, `GlobalWidgetsLocalizations`,
   `GlobalCupertinoLocalizations`) and `supportedLocales: [es, en]` so Material
   widgets (pickers, tooltips, date formatting) localize alongside `AppStrings`.
+- **`MaterialApp.router` is keyed on the active language**
+  (`key: ValueKey(language)`). This is load-bearing, not incidental: because
+  `AppStrings` reads a static (not an `InheritedWidget` via `.of(context)`), a
+  plain locale rebuild would skip `const`-canonicalized subtrees — including the
+  `const` route pages (`const ProfileView()`, `const MainMenuView()`, …) — and
+  strand them in the previous language. The key forces a full remount on switch;
+  the external `GoRouter` preserves the current location. Never remove this key
+  while the static-`AppStrings` model is in use. (If the app ever migrates to
+  generated `AppLocalizations.of(context)`, the dependency is tracked per-element
+  and the key becomes unnecessary.)
 - **Persistence is a port.** The selected language is stored via the `LocaleStore`
   port (`PreferencesLocaleStore` over `SharedPreferencesAdapter`) and hydrated
   once at bootstrap by dispatching `LocaleInitialized` before `runApp`, so the app

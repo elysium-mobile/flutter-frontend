@@ -130,6 +130,16 @@ class SoftWorkApp extends StatelessWidget {
           // `Localizations` subtree below rebuilds and re-resolves every string.
           AppLocale.current = language;
           return MaterialApp.router(
+            // Correctness key: unlike `AppLocalizations.of(context)`, the static
+            // `AppStrings` getters establish no `InheritedWidget` dependency, so a
+            // plain locale rebuild would skip `const`-canonicalized subtrees
+            // (including the `const` route pages) and leave them in the previous
+            // language. Keying the app on the active language forces a full
+            // remount on switch, re-resolving every string. Navigation position
+            // is preserved because the `GoRouter` (routerConfig) is external and
+            // retains the current location across the remount. Locale switches
+            // are rare, so the one-off rebuild cost is negligible.
+            key: ValueKey<AppLanguage>(language),
             title: 'SoftWork',
             debugShowCheckedModeBanner: false,
             routerConfig: router,
