@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../../shared/data/local/app_database.dart';
 import '../../../shared/data/network/api_client.dart';
 import '../../../shared/data/network/environment_config.dart';
-import '../../../shared/data/pref/shared_preferences_adapter.dart';
 import '../../domain/models/auth_session.dart';
 import '../../domain/stores/authentication_store.dart';
+import '../models/db_mapping_extensions.dart';
 import '../network/iam_web_service.dart';
 import '../network/requests/register_request.dart';
 import '../network/requests/sign_in_request.dart';
@@ -18,26 +19,30 @@ import '../network/requests/sign_in_request.dart';
 /// Identity vs. profile: Firebase/Google act as the verified *identity*
 /// provider; the resulting ID token is bridged to the backend, which is the
 /// authoritative source for the first-party [AuthSession]. On success the access
-/// token is persisted through [SharedPreferencesAdapter] so the shared
-/// [ApiClient] can authorize subsequent requests.
+/// token is persisted into the local [AppDatabase] (Drift/sqlite3) so the shared
+/// [ApiClient] can authorize subsequent requests across cold starts.
 ///
 /// Provider-specific errors are caught and re-thrown as plain [Exception]s with
 /// English diagnostic messages; the application layer maps them to a generic
 /// user-facing message.
 class FirebaseAuthenticationStore implements AuthenticationStore {
-  /// Creates a [FirebaseAuthenticationStore].
+  /// Creates a [FirebaseAuthenticationStore] wired to live production services.
+  ///
+  /// [webService] performs the backend credential exchange, [database] persists
+  /// the established session, and [firebaseAuth]/[googleSignIn] default to the
+  /// live platform singletons.
   FirebaseAuthenticationStore({
     required IamWebService webService,
-    required SharedPreferencesAdapter preferences,
+    required AppDatabase database,
     FirebaseAuth? firebaseAuth,
     GoogleSignIn? googleSignIn,
   })  : _webService = webService, // ignore: prefer_initializing_formals
-        _preferences = preferences, // ignore: prefer_initializing_formals
+        _database = database, // ignore: prefer_initializing_formals
         _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
         _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
 
   final IamWebService _webService;
-  final SharedPreferencesAdapter _preferences;
+  final AppDatabase _database;
   final FirebaseAuth _firebaseAuth;
   final GoogleSignIn _googleSignIn;
 
@@ -67,8 +72,9 @@ class FirebaseAuthenticationStore implements AuthenticationStore {
         password: password,
       );
       final idToken = await _requireIdToken(credential.user);
-      final dto = await _webService.authenticate(SignInRequest(idToken: idToken));
-      return _establish(dto.toDomain());
+      final response =
+          await _webService.authenticate(SignInRequest(idToken: idToken));
+      return _establish(response.toDomain());
     });
   }
 
@@ -96,8 +102,9 @@ class FirebaseAuthenticationStore implements AuthenticationStore {
       final userCredential =
           await _firebaseAuth.signInWithCredential(credential);
       final idToken = await _requireIdToken(userCredential.user);
-      final dto = await _webService.authenticate(SignInRequest(idToken: idToken));
-      return _establish(dto.toDomain());
+      final response =
+          await _webService.authenticate(SignInRequest(idToken: idToken));
+      return _establish(response.toDomain());
     });
   }
 
@@ -115,10 +122,10 @@ class FirebaseAuthenticationStore implements AuthenticationStore {
       await credential.user?.updateDisplayName(username);
 
       final idToken = await _requireIdToken(credential.user);
-      final dto = await _webService.register(
+      final response = await _webService.register(
         RegisterRequest(idToken: idToken, username: username, email: email),
       );
-      return _establish(dto.toDomain());
+      return _establish(response.toDomain());
     });
   }
 
@@ -126,7 +133,7 @@ class FirebaseAuthenticationStore implements AuthenticationStore {
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     await _firebaseAuth.signOut();
-    await _preferences.clearSession();
+    await _database.clearCachedSessions();
     _publish(null);
   }
 
@@ -135,9 +142,10 @@ class FirebaseAuthenticationStore implements AuthenticationStore {
     await _sessionController.close();
   }
 
-  /// Persists the session token, caches the session and notifies subscribers.
+  /// Persists the session row, caches the session in memory and notifies
+  /// subscribers.
   Future<AuthSession> _establish(AuthSession session) async {
-    await _preferences.saveSessionToken(session.accessToken);
+    await _database.cacheSession(session.toCompanion());
     _publish(session);
     return session;
   }

@@ -11,27 +11,23 @@
 /// not provide a given variable. The class is non-instantiable; it exposes
 /// configuration exclusively as `const` static members.
 abstract final class EnvironmentConfig {
-  /// When true, structural network endpoints and security adapters load
-  /// pre-baked mock models instead of live infrastructure.
-  ///
-  /// Toggled via `--dart-define=IS_MOCK_MODE=true`, selecting the
-  /// Local/Develop flavor at the service-locator composition root.
-  static const bool isMockMode = bool.fromEnvironment(
-    'IS_MOCK_MODE',
-    defaultValue: false,
-  );
-
-  /// The base URL string targeting the authoritative enterprise backend
+  /// The base URL string targeting the authoritative SoftWork/ELYSIUM backend
   /// services.
+  ///
+  /// Defaults to the documented development host (`http://localhost:8092`);
+  /// override per environment via `--dart-define=API_BASE_URL=...` (production
+  /// listens on `${PORT:8080}`).
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://api.softwork.com',
+    defaultValue: 'http://localhost:8092',
   );
 
   /// Root path prefix prepended to every relative API endpoint.
+  ///
+  /// The ELYSIUM backend exposes every controller under `/api/v1`.
   static const String apiPrefix = String.fromEnvironment(
     'API_PREFIX',
-    defaultValue: '/v1',
+    defaultValue: '/api/v1',
   );
 
   /// Network request timeout, in seconds, applied to backend exchanges.
