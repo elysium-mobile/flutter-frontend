@@ -8,6 +8,8 @@ import '../../../shared/presentation/components/user_avatar.dart';
 import '../../../shared/presentation/design/app_colors.dart';
 import '../../../shared/presentation/design/app_dimensions.dart';
 import '../../../shared/presentation/design/app_typography.dart';
+import '../../../shared/application/bloc/locale_bloc.dart';
+import '../../../shared/domain/models/app_language.dart';
 import '../../../shared/presentation/i18n/app_strings.dart';
 import '../../../payment/presentation/navigation/payment_routes.dart';
 import '../../application/bloc/session_bloc.dart';
@@ -73,6 +75,8 @@ class ProfileView extends StatelessWidget {
                 _EmploymentInformationBox(email: email),
                 const SizedBox(height: AppSpacing.md),
                 const _PaymentMethodsLink(),
+                const SizedBox(height: AppSpacing.md),
+                const _LanguageCard(),
                 const SizedBox(height: AppSpacing.xl),
                 Row(
                   children: <Widget>[
@@ -272,6 +276,108 @@ class _PaymentMethodsLink extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Profile "Language" section — a two-option segmented control that switches the
+/// app's interface language at runtime through the long-lived [LocaleBloc].
+///
+/// The selection is a self-contained reactive island: a `buildWhen`-guarded
+/// [BlocBuilder] rebuilds only when the active language changes, and each option
+/// merely dispatches [LocaleSelected]. The bloc persists the choice and re-emits,
+/// which rebuilds `MaterialApp` and re-resolves every localized string.
+class _LanguageCard extends StatelessWidget {
+  const _LanguageCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(color: AppColors.dark.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            child: Text(
+              AppStrings.settingsLanguage,
+              style: AppTypography.label,
+            ),
+          ),
+          BlocBuilder<LocaleBloc, LocaleState>(
+            buildWhen: (LocaleState previous, LocaleState current) =>
+                previous.language != current.language,
+            builder: (BuildContext context, LocaleState state) {
+              return Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _LanguageOption(
+                      label: AppStrings.languageNameSpanish,
+                      selected: state.language == AppLanguage.spanish,
+                      onTap: () => context
+                          .read<LocaleBloc>()
+                          .add(const LocaleSelected(AppLanguage.spanish)),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: _LanguageOption(
+                      label: AppStrings.languageNameEnglish,
+                      selected: state.language == AppLanguage.english,
+                      onTap: () => context
+                          .read<LocaleBloc>()
+                          .add(const LocaleSelected(AppLanguage.english)),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A single selectable language tile inside the [_LanguageCard] segmented
+/// control. The active tile is filled and non-tappable; the inactive tile is
+/// outlined and dispatches the switch.
+class _LanguageOption extends StatelessWidget {
+  const _LanguageOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? AppColors.primaryNavy : AppColors.accentWhite,
+      borderRadius: BorderRadius.circular(AppRadii.button),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.button),
+        onTap: selected ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Center(
+            child: Text(
+              label,
+              style: AppTypography.body.copyWith(
+                color: selected ? AppColors.accentWhite : AppColors.primaryNavy,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

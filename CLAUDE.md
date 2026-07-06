@@ -350,3 +350,55 @@ Before considering any optimization complete:
 2. `dart run build_runner build` — clean, when any annotated class/table changed.
 3. No behavioral regression: selective-rebuild and repaint changes must be
    output-equivalent; only the rebuild/repaint *frequency* may change.
+
+### 13.6 Internationalization (i18n) reactive state
+
+Runtime language switching is a first-class, reactive feature. It is **on** by
+default: the app ships English + Spanish and defaults to Spanish
+(`AppLanguage.fallback`, matching the `S/.` currency and the approved mockups).
+
+**Architecture (one directional flow, layer-pure):**
+
+```
+Profile toggle ──add(LocaleSelected)──▶ LocaleBloc ──emit(LocaleState)──▶ BlocSelector
+      (presentation)                    (application, depends only          (main.dart)
+                                          on LocaleStore port)                    │
+                            LocaleStore ◀── persist ──┘                           ▼
+                         (domain port; PreferencesLocaleStore adapter)   set AppLocale.current
+                                                                          + MaterialApp.locale
+                                                                                  │
+                                                                                  ▼
+                                                                    Localizations subtree rebuilds
+                                                                    → AppStrings.* re-resolve
+```
+
+**Enforced rules for any new localized surface:**
+
+- **All user-facing copy goes through `AppStrings`, and every getter resolves via
+  `AppLocale.t(en: ..., es: ...)`** — never `Intl.message`, never a hard-coded
+  literal, never a raw ternary on the language. Adding a language extends
+  `AppLanguage` and the `switch` in `AppLocale.t`, which then fails to compile
+  until every string is translated (totality is the safety net).
+- **`AppLocale.current` is written from exactly one place:** the `MaterialApp`
+  `BlocSelector<LocaleBloc, LocaleState, AppLanguage>` builder in `main.dart`,
+  immediately before the `Localizations` subtree rebuilds. Never mutate it from a
+  view, a bloc, or a mapper. The `LocaleBloc` stays presentation-agnostic (it
+  depends only on the `LocaleStore` domain port), so the language-application
+  side effect lives entirely in the presentation boundary.
+- **The language switch is the *only* trigger that rebuilds `MaterialApp`.** It is
+  gated by a `BlocSelector` on `LocaleState.language`; do not widen it to rebuild
+  on unrelated global state. Re-selecting the active language is a no-op in the
+  bloc, so no redundant locale rebuild is emitted.
+- **`MaterialApp` must keep the `flutter_localizations` delegates**
+  (`GlobalMaterialLocalizations`, `GlobalWidgetsLocalizations`,
+  `GlobalCupertinoLocalizations`) and `supportedLocales: [es, en]` so Material
+  widgets (pickers, tooltips, date formatting) localize alongside `AppStrings`.
+- **Persistence is a port.** The selected language is stored via the `LocaleStore`
+  port (`PreferencesLocaleStore` over `SharedPreferencesAdapter`) and hydrated
+  once at bootstrap by dispatching `LocaleInitialized` before `runApp`, so the app
+  opens in the persisted language with no flash of the default.
+- **Locale changes never touch the network or database layers.** Switching
+  language only re-resolves text and rebuilds the widget tree; it must never
+  re-instantiate the `ApiClient`, reopen the Drift connection, or re-subscribe an
+  existing stream. The long-lived `LocaleBloc` is a GetIt singleton and holds no
+  disposable resources of its own.

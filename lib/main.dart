@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,8 +12,11 @@ import 'firebase_options.dart';
 import 'iam/application/bloc/session_bloc.dart';
 import 'payment/application/bloc/membership_gate_bloc.dart';
 import 'service_locator.dart';
+import 'shared/application/bloc/locale_bloc.dart';
 import 'shared/data/network/environment_config.dart';
+import 'shared/domain/models/app_language.dart';
 import 'shared/presentation/design/app_theme.dart';
+import 'shared/presentation/i18n/app_locale.dart';
 
 /// Application entry point — the absolute initialization layer.
 ///
@@ -28,12 +32,16 @@ Future<void> main() async {
 
   final sessionBloc = GetIt.instance<SessionBloc>();
   final membershipGateBloc = GetIt.instance<MembershipGateBloc>();
+  // Hydrate the persisted language preference before the first frame so the app
+  // opens directly in the user's chosen language (no flash of the default).
+  final localeBloc = GetIt.instance<LocaleBloc>()..add(const LocaleInitialized());
   final router = AppRouter.create(sessionBloc, membershipGateBloc);
 
   runApp(SoftWorkApp(
     router: router,
     sessionBloc: sessionBloc,
     membershipGateBloc: membershipGateBloc,
+    localeBloc: localeBloc,
   ));
 }
 
@@ -87,6 +95,7 @@ class SoftWorkApp extends StatelessWidget {
     required this.router,
     required this.sessionBloc,
     required this.membershipGateBloc,
+    required this.localeBloc,
   });
 
   /// The configured dual-strategy router.
@@ -99,18 +108,44 @@ class SoftWorkApp extends StatelessWidget {
   /// consumed by the plan-selection success flow.
   final MembershipGateBloc membershipGateBloc;
 
+  /// The long-lived localization bloc driving the reactive interface language.
+  final LocaleBloc localeBloc;
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: <BlocProvider<dynamic>>[
         BlocProvider<SessionBloc>.value(value: sessionBloc),
         BlocProvider<MembershipGateBloc>.value(value: membershipGateBloc),
+        BlocProvider<LocaleBloc>.value(value: localeBloc),
       ],
-      child: MaterialApp.router(
-        title: 'SoftWork',
-        debugShowCheckedModeBanner: false,
-        routerConfig: router,
-        theme: AppTheme.light(),
+      // Reactive localization boundary: only the active language is selected, so
+      // the `MaterialApp` (and the `Localizations` subtree beneath it) rebuilds
+      // exclusively on a language switch — never on unrelated app state.
+      child: BlocSelector<LocaleBloc, LocaleState, AppLanguage>(
+        selector: (LocaleState state) => state.language,
+        builder: (BuildContext context, AppLanguage language) {
+          // Mirror the selected language into the process-wide holder that the
+          // static [AppStrings] getters read, immediately before the
+          // `Localizations` subtree below rebuilds and re-resolves every string.
+          AppLocale.current = language;
+          return MaterialApp.router(
+            title: 'SoftWork',
+            debugShowCheckedModeBanner: false,
+            routerConfig: router,
+            theme: AppTheme.light(),
+            locale: Locale(language.code),
+            localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const <Locale>[
+              Locale('es'),
+              Locale('en'),
+            ],
+          );
+        },
       ),
     );
   }

@@ -1,383 +1,391 @@
-import 'package:intl/intl.dart';
+import 'app_locale.dart';
 
-/// Centralized, localizable string catalogue backed by the `intl` engine.
+/// Centralized, runtime-localizable string catalogue.
 ///
-/// Every user-facing label is declared through [Intl.message], giving a single
-/// extraction point for translation tooling while returning English copy by
-/// default. Keeping all strings here guarantees views contain no hard-coded
-/// (and no Spanish) text.
+/// Every user-facing label resolves through [AppLocale.t], which returns the
+/// literal for the currently active [AppLocale.current] language. Keeping all
+/// strings behind these static getters means views never hard-code copy and
+/// never plumb a `BuildContext` for translation, while a language switch
+/// (driven by `LocaleBloc`) re-resolves the whole catalogue on the next build.
+///
+/// Adding a language is a total, compiler-enforced change: extend `AppLanguage`
+/// and the `switch` inside [AppLocale.t] stops compiling until every string has
+/// the new translation.
 abstract final class AppStrings {
   /// Application brand name.
-  static String get appName =>
-      Intl.message('SoftWork', name: 'appName');
+  static String get appName => AppLocale.t(en: 'SoftWork', es: 'SoftWork');
 
   // --- Login ------------------------------------------------------------------
 
   /// Login institutional email field label.
-  static String get institutionalEmail => Intl.message(
-        'Institutional email',
-        name: 'institutionalEmail',
-      );
+  static String get institutionalEmail =>
+      AppLocale.t(en: 'Institutional email', es: 'Correo institucional');
 
   /// Password field label.
-  static String get password => Intl.message('Password', name: 'password');
+  static String get password => AppLocale.t(en: 'Password', es: 'Contraseña');
 
   /// "Forgot your password?" action.
-  static String get forgotPassword => Intl.message(
-        'Forgot your password?',
-        name: 'forgotPassword',
+  static String get forgotPassword => AppLocale.t(
+        en: 'Forgot your password?',
+        es: '¿Olvidaste tu contraseña?',
       );
 
   /// Primary sign-in button label.
-  static String get signIn => Intl.message('Sign In', name: 'signIn');
+  static String get signIn => AppLocale.t(en: 'Sign In', es: 'Iniciar sesión');
 
-  /// Divider separator character.
-  static String get orSeparator => Intl.message('o', name: 'orSeparator');
+  /// Divider separator word.
+  static String get orSeparator => AppLocale.t(en: 'or', es: 'o');
 
   /// Federated Google sign-in button label.
-  static String get continueWithGoogle => Intl.message(
-        'Continue with Google',
-        name: 'continueWithGoogle',
+  static String get continueWithGoogle => AppLocale.t(
+        en: 'Continue with Google',
+        es: 'Continuar con Google',
       );
 
   /// "Don't have an account?" prompt.
-  static String get dontHaveAccount => Intl.message(
-        "Don't have an account? ",
-        name: 'dontHaveAccount',
+  static String get dontHaveAccount => AppLocale.t(
+        en: "Don't have an account? ",
+        es: '¿No tienes una cuenta? ',
       );
 
   /// Sign-up link label.
-  static String get signUp => Intl.message('Sign Up', name: 'signUp');
+  static String get signUp => AppLocale.t(en: 'Sign Up', es: 'Regístrate');
 
   // --- Registration -----------------------------------------------------------
 
   /// Registration screen title.
   static String get createAccount =>
-      Intl.message('Create account', name: 'createAccount');
+      AppLocale.t(en: 'Create account', es: 'Crear cuenta');
 
   /// Registration subtitle constraint.
-  static String get onlyCorporateEmails => Intl.message(
-        'Only corporate emails are accepted',
-        name: 'onlyCorporateEmails',
+  static String get onlyCorporateEmails => AppLocale.t(
+        en: 'Only corporate emails are accepted',
+        es: 'Solo se aceptan correos corporativos',
       );
 
   /// Username field label.
-  static String get username => Intl.message('Username', name: 'username');
+  static String get username =>
+      AppLocale.t(en: 'Username', es: 'Nombre de usuario');
 
   /// Corporate email field label.
   static String get corporateEmail =>
-      Intl.message('Corporate email', name: 'corporateEmail');
+      AppLocale.t(en: 'Corporate email', es: 'Correo corporativo');
 
   /// Verified-domain badge label.
   static String get verifiedDomain =>
-      Intl.message('Verified domain', name: 'verifiedDomain');
+      AppLocale.t(en: 'Verified domain', es: 'Dominio verificado');
 
   /// Confirm-password field label.
   static String get confirmPassword =>
-      Intl.message('Confirm password', name: 'confirmPassword');
+      AppLocale.t(en: 'Confirm password', es: 'Confirmar contraseña');
 
   /// Inline error shown when the two passwords differ.
-  static String get passwordsDoNotMatch => Intl.message(
-        'The passwords do not match.',
-        name: 'passwordsDoNotMatch',
+  static String get passwordsDoNotMatch => AppLocale.t(
+        en: 'The passwords do not match.',
+        es: 'Las contraseñas no coinciden.',
       );
 
   /// "Already have an account?" prompt.
-  static String get alreadyHaveAccount => Intl.message(
-        'Already have an account? ',
-        name: 'alreadyHaveAccount',
+  static String get alreadyHaveAccount => AppLocale.t(
+        en: 'Already have an account? ',
+        es: '¿Ya tienes una cuenta? ',
       );
 
   // --- Success interstitials --------------------------------------------------
 
   /// "Session Started" status label.
   static String get sessionStarted =>
-      Intl.message('Session Started', name: 'sessionStarted');
+      AppLocale.t(en: 'Session Started', es: 'Sesión iniciada');
 
   /// "User Registered" status label.
   static String get userRegistered =>
-      Intl.message('User Registered', name: 'userRegistered');
+      AppLocale.t(en: 'User Registered', es: 'Usuario registrado');
 
   /// Generic continue CTA.
   static String get continueLabel =>
-      Intl.message('Continue', name: 'continueLabel');
+      AppLocale.t(en: 'Continue', es: 'Continuar');
 
   // --- Shared / diagnostics ---------------------------------------------------
 
   /// Accessibility / tooltip label to reveal the password.
   static String get showPassword =>
-      Intl.message('Show password', name: 'showPassword');
+      AppLocale.t(en: 'Show password', es: 'Mostrar contraseña');
 
   /// Accessibility / tooltip label to hide the password.
   static String get hidePassword =>
-      Intl.message('Hide password', name: 'hidePassword');
+      AppLocale.t(en: 'Hide password', es: 'Ocultar contraseña');
 
   /// Back-navigation tooltip.
-  static String get back => Intl.message('Back', name: 'back');
+  static String get back => AppLocale.t(en: 'Back', es: 'Atrás');
 
   /// Generic, user-facing failure message.
-  static String get somethingWentWrong => Intl.message(
-        'Something went wrong. Please try again.',
-        name: 'somethingWentWrong',
+  static String get somethingWentWrong => AppLocale.t(
+        en: 'Something went wrong. Please try again.',
+        es: 'Algo salió mal. Inténtalo de nuevo.',
       );
 
   // --- Bottom navigation tabs -------------------------------------------------
 
   /// Menu (dashboard) tab label.
-  static String get menuTab => Intl.message('Menu', name: 'menuTab');
+  static String get menuTab => AppLocale.t(en: 'Menu', es: 'Menú');
 
   /// Profile tab label.
-  static String get profileTab => Intl.message('Profile', name: 'profileTab');
+  static String get profileTab => AppLocale.t(en: 'Profile', es: 'Perfil');
 
   /// Alerts tab label.
-  static String get alertsTab => Intl.message('Alerts', name: 'alertsTab');
+  static String get alertsTab => AppLocale.t(en: 'Alerts', es: 'Alertas');
 
   /// Reports tab label.
-  static String get reportsTab => Intl.message('Reports', name: 'reportsTab');
+  static String get reportsTab => AppLocale.t(en: 'Reports', es: 'Reportes');
 
   // --- Dashboard / main menu --------------------------------------------------
 
   /// Dashboard header title.
   static String get dashboardTitle =>
-      Intl.message('Dashboard', name: 'dashboardTitle');
+      AppLocale.t(en: 'Dashboard', es: 'Panel');
 
   /// "Assigned Teams" container card title.
   static String get assignedTeams =>
-      Intl.message('Assigned Teams', name: 'assignedTeams');
+      AppLocale.t(en: 'Assigned Teams', es: 'Equipos asignados');
 
   /// "Company" metadata label.
-  static String get company => Intl.message('Company', name: 'company');
+  static String get company => AppLocale.t(en: 'Company', es: 'Empresa');
 
   /// "Team" metadata label.
-  static String get team => Intl.message('Team', name: 'team');
+  static String get team => AppLocale.t(en: 'Team', es: 'Equipo');
 
   /// Neutral default job-role label, shown when no role is assigned.
   static String get employeeRole =>
-      Intl.message('Employee', name: 'employeeRole');
+      AppLocale.t(en: 'Employee', es: 'Empleado');
 
   // --- Profile ----------------------------------------------------------------
 
   /// Profile screen title ("My Profile").
-  static String get myProfile => Intl.message('My Profile', name: 'myProfile');
+  static String get myProfile => AppLocale.t(en: 'My Profile', es: 'Mi perfil');
 
   /// "Edit" app-bar action label.
-  static String get edit => Intl.message('Edit', name: 'edit');
+  static String get edit => AppLocale.t(en: 'Edit', es: 'Editar');
 
   /// "Employment Information" section title.
-  static String get employmentInformation => Intl.message(
-        'Employment Information',
-        name: 'employmentInformation',
+  static String get employmentInformation => AppLocale.t(
+        en: 'Employment Information',
+        es: 'Información laboral',
       );
 
   /// "Area" metadata label.
-  static String get area => Intl.message('Area', name: 'area');
+  static String get area => AppLocale.t(en: 'Area', es: 'Área');
 
   /// "Role" metadata label.
-  static String get role => Intl.message('Role', name: 'role');
+  static String get role => AppLocale.t(en: 'Role', es: 'Rol');
 
   /// "Email" metadata label.
-  static String get email => Intl.message('Email', name: 'email');
+  static String get email => AppLocale.t(en: 'Email', es: 'Correo');
 
   /// "Payment Methods" card link label.
   static String get paymentMethods =>
-      Intl.message('Payment Methods', name: 'paymentMethods');
+      AppLocale.t(en: 'Payment Methods', es: 'Métodos de pago');
 
   /// Outlined "Edit Profile" CTA label.
   static String get editProfile =>
-      Intl.message('Edit Profile', name: 'editProfile');
+      AppLocale.t(en: 'Edit Profile', es: 'Editar perfil');
 
   /// Critical "Sign Out" action label.
-  static String get signOut => Intl.message('Sign Out', name: 'signOut');
+  static String get signOut => AppLocale.t(en: 'Sign Out', es: 'Cerrar sesión');
 
   /// Camera overlay tooltip to change the avatar photo.
   static String get changePhoto =>
-      Intl.message('Change photo', name: 'changePhoto');
+      AppLocale.t(en: 'Change photo', es: 'Cambiar foto');
 
   /// Placeholder shown for unassigned employment fields.
   static String get notAssigned =>
-      Intl.message('Not assigned', name: 'notAssigned');
+      AppLocale.t(en: 'Not assigned', es: 'No asignado');
+
+  // --- Language selection (Profile tab) --------------------------------------
+
+  /// "Language" section title in the Profile tab.
+  static String get settingsLanguage =>
+      AppLocale.t(en: 'Language', es: 'Idioma');
+
+  /// English language option label.
+  static String get languageNameEnglish =>
+      AppLocale.t(en: 'English', es: 'Inglés');
+
+  /// Spanish language option label.
+  static String get languageNameSpanish =>
+      AppLocale.t(en: 'Spanish', es: 'Español');
 
   // --- Profile configuration --------------------------------------------------
 
   /// Profile configuration screen title.
-  static String get profileConfiguration => Intl.message(
-        'Profile Configuration',
-        name: 'profileConfiguration',
+  static String get profileConfiguration => AppLocale.t(
+        en: 'Profile Configuration',
+        es: 'Configuración de perfil',
       );
 
   /// Solid primary "Save Changes" CTA label.
   static String get saveChanges =>
-      Intl.message('Save Changes', name: 'saveChanges');
+      AppLocale.t(en: 'Save Changes', es: 'Guardar cambios');
 
   // --- Alerts / reports placeholders -----------------------------------------
 
   /// Empty-state copy for the alerts tab.
   static String get noAlertsYet =>
-      Intl.message('No alerts yet.', name: 'noAlertsYet');
+      AppLocale.t(en: 'No alerts yet.', es: 'Aún no hay alertas.');
 
   /// Empty-state copy for the reports tab.
   static String get noReportsYet =>
-      Intl.message('No reports yet.', name: 'noReportsYet');
+      AppLocale.t(en: 'No reports yet.', es: 'Aún no hay reportes.');
 
   // --- HR Analytics (Reports) -------------------------------------------------
-  //
-  // The user-facing values below are the localized (Spanish) UI strings taken
-  // verbatim from the approved HR Analytics mockup. They are intentionally
-  // exempt from the English-only rule (which still governs identifiers and
-  // dartdoc) and remain routed through the i18n engine rather than hard-coded.
 
-  /// HR Analytics screen header title (mockup: "Reportes").
+  /// HR Analytics screen header title.
   static String get hrReportsTitle =>
-      Intl.message('Reportes', name: 'hrReportsTitle');
+      AppLocale.t(en: 'Reports', es: 'Reportes');
 
-  /// Team selector container label (mockup: "Elegir equipo").
+  /// Team selector container label.
   static String get chooseTeam =>
-      Intl.message('Elegir equipo', name: 'chooseTeam');
+      AppLocale.t(en: 'Choose team', es: 'Elegir equipo');
 
-  /// Neutral "no team selected" option shown in the selector (mockup:
-  /// "Ninguno"). Selecting it collapses the entire metrics canvas.
-  static String get noneOption =>
-      Intl.message('Ninguno', name: 'noneOption');
+  /// Neutral "no team selected" option shown in the selector. Selecting it
+  /// collapses the entire metrics canvas.
+  static String get noneOption => AppLocale.t(en: 'None', es: 'Ninguno');
 
   /// Empty-state copy when the HR specialist has no assigned teams.
-  static String get noAssignedTeams => Intl.message(
-        'No hay equipos asignados.',
-        name: 'noAssignedTeams',
+  static String get noAssignedTeams => AppLocale.t(
+        en: 'No assigned teams.',
+        es: 'No hay equipos asignados.',
       );
 
-  /// Average-wellbeing metric box label (mockup: "Bienestar promedio").
+  /// Average-wellbeing metric box label.
   static String get averageWellbeing =>
-      Intl.message('Bienestar promedio', name: 'averageWellbeing');
+      AppLocale.t(en: 'Average wellbeing', es: 'Bienestar promedio');
 
-  /// Members metric box label (mockup: "Integrantes").
-  static String get members => Intl.message('Integrantes', name: 'members');
+  /// Members metric box label.
+  static String get members =>
+      AppLocale.t(en: 'Members', es: 'Integrantes');
 
-  /// Forum-reports metric box label (mockup: "Reportes en foro").
+  /// Forum-reports metric box label.
   static String get forumReports =>
-      Intl.message('Reportes en foro', name: 'forumReports');
+      AppLocale.t(en: 'Forum reports', es: 'Reportes en foro');
 
-  /// Completed-surveys metric box label (mockup: "Encuestas realizadas").
+  /// Completed-surveys metric box label.
   static String get completedSurveys =>
-      Intl.message('Encuestas realizadas', name: 'completedSurveys');
+      AppLocale.t(en: 'Completed surveys', es: 'Encuestas realizadas');
 
-  /// Historical progress chart title (mockup: "Progreso histórico").
+  /// Historical progress chart title.
   static String get historicalProgress =>
-      Intl.message('Progreso histórico', name: 'historicalProgress');
+      AppLocale.t(en: 'Historical progress', es: 'Progreso histórico');
 
   /// Empty-state copy for the historical progress chart.
-  static String get noHistoryData => Intl.message(
-        'No hay datos históricos disponibles.',
-        name: 'noHistoryData',
+  static String get noHistoryData => AppLocale.t(
+        en: 'No historical data available.',
+        es: 'No hay datos históricos disponibles.',
       );
 
-  /// Primary footer button label (mockup: "Generar reporte").
+  /// Primary footer button label.
   static String get generateReport =>
-      Intl.message('Generar reporte', name: 'generateReport');
+      AppLocale.t(en: 'Generate report', es: 'Generar reporte');
 
   /// Snackbar acknowledgement after requesting a report.
-  static String get reportRequested => Intl.message(
-        'Generación de reporte solicitada.',
-        name: 'reportRequested',
+  static String get reportRequested => AppLocale.t(
+        en: 'Report generation requested.',
+        es: 'Generación de reporte solicitada.',
       );
 
   // --- Payment (subscriptions & cards) ---------------------------------------
-  //
-  // As with the HR Analytics panel, the user-facing values below are the
-  // localized (Spanish) UI strings from the approved payment mockups. Only the
-  // display values are localized; identifiers and dartdoc remain English, and
-  // every string is still routed through the i18n engine.
 
-  /// Plan-selection screen title (mockup: "Membresías").
+  /// Plan-selection screen title.
   static String get membershipsTitle =>
-      Intl.message('Membresías', name: 'membershipsTitle');
+      AppLocale.t(en: 'Memberships', es: 'Membresías');
 
-  /// Currency symbol prefix for prices (mockup: "S/.").
-  static String get currencySymbol =>
-      Intl.message('S/.', name: 'currencySymbol');
+  /// Currency symbol prefix for prices (locale-neutral).
+  static String get currencySymbol => AppLocale.t(en: 'S/.', es: 'S/.');
 
-  /// Per-month price suffix (mockup: "/mes").
-  static String get perMonth => Intl.message('/mes', name: 'perMonth');
+  /// Per-month price suffix.
+  static String get perMonth => AppLocale.t(en: '/mo', es: '/mes');
 
-  /// Plan-card call-to-action (mockup: "Seleccionar plan").
+  /// Plan-card call-to-action.
   static String get selectPlan =>
-      Intl.message('Seleccionar plan', name: 'selectPlan');
+      AppLocale.t(en: 'Select plan', es: 'Seleccionar plan');
 
-  /// Plan feature — basic check-in (mockup: "Check-in básico").
+  /// Plan feature — basic check-in.
   static String get featureCheckInBasic =>
-      Intl.message('Check-in básico', name: 'featureCheckInBasic');
+      AppLocale.t(en: 'Basic check-in', es: 'Check-in básico');
 
-  /// Plan feature — surveys (mockup: "Encuestas").
+  /// Plan feature — surveys.
   static String get featureSurveys =>
-      Intl.message('Encuestas', name: 'featureSurveys');
+      AppLocale.t(en: 'Surveys', es: 'Encuestas');
 
-  /// Plan feature — labor forum (mockup: "Foro laboral").
+  /// Plan feature — labor forum.
   static String get featureLaborForum =>
-      Intl.message('Foro laboral', name: 'featureLaborForum');
+      AppLocale.t(en: 'Labor forum', es: 'Foro laboral');
 
-  /// Plan feature — HR messaging (mockup: "Mensajería HR").
+  /// Plan feature — HR messaging.
   static String get featureHrMessaging =>
-      Intl.message('Mensajería HR', name: 'featureHrMessaging');
+      AppLocale.t(en: 'HR messaging', es: 'Mensajería HR');
 
-  /// Plan feature — encrypted reports (mockup: "Denuncias cifradas").
+  /// Plan feature — encrypted reports.
   static String get featureEncryptedReports =>
-      Intl.message('Denuncias cifradas', name: 'featureEncryptedReports');
+      AppLocale.t(en: 'Encrypted reports', es: 'Denuncias cifradas');
 
-  /// Payment-methods screen title (mockup: "Métodos de pago").
+  /// Payment-methods screen title.
   static String get paymentMethodsTitle =>
-      Intl.message('Métodos de pago', name: 'paymentMethodsTitle');
+      AppLocale.t(en: 'Payment methods', es: 'Métodos de pago');
 
-  /// Billing banner label (mockup: "Próximo cobro").
+  /// Billing banner label.
   static String get nextCharge =>
-      Intl.message('Próximo cobro', name: 'nextCharge');
+      AppLocale.t(en: 'Next charge', es: 'Próximo cobro');
 
-  /// Add-method button label (mockup: "Agregar método de pago").
+  /// Add-method button label.
   static String get addPaymentMethod =>
-      Intl.message('Agregar método de pago', name: 'addPaymentMethod');
+      AppLocale.t(en: 'Add payment method', es: 'Agregar método de pago');
 
-  /// Cancel-subscription button label (mockup: "Cancelar suscripción").
+  /// Cancel-subscription button label.
   static String get cancelSubscription =>
-      Intl.message('Cancelar suscripción', name: 'cancelSubscription');
+      AppLocale.t(en: 'Cancel subscription', es: 'Cancelar suscripción');
 
-  /// Cardholder-name placeholder (mockup: "Nombre1").
+  /// Cardholder-name field hint.
   static String get cardHolderHint =>
-      Intl.message('Nombre1', name: 'cardHolderHint');
+      AppLocale.t(en: 'Cardholder name', es: 'Nombre del titular');
 
-  /// Card-number placeholder (mockup: "5123 xxxx xxxx xxxx").
-  static String get cardNumberHint =>
-      Intl.message('5123 xxxx xxxx xxxx', name: 'cardNumberHint');
+  /// Card-number field hint (locale-neutral sample).
+  static String get cardNumberHint => AppLocale.t(
+        en: '5123 xxxx xxxx xxxx',
+        es: '5123 xxxx xxxx xxxx',
+      );
 
-  /// Expiry-date placeholder (mockup: "08 / 2028").
+  /// Expiry-date field hint (locale-neutral sample).
   static String get expiryHint =>
-      Intl.message('08 / 2028', name: 'expiryHint');
+      AppLocale.t(en: '08 / 2028', es: '08 / 2028');
 
-  /// Security-code placeholder (mockup: "715").
-  static String get cvvHint => Intl.message('715', name: 'cvvHint');
+  /// Security-code field hint (locale-neutral sample).
+  static String get cvvHint => AppLocale.t(en: '715', es: '715');
 
-  /// Save-card switch label (mockup: "Save this card").
+  /// Save-card switch label.
   static String get saveThisCard =>
-      Intl.message('Save this card', name: 'saveThisCard');
+      AppLocale.t(en: 'Save this card', es: 'Guardar esta tarjeta');
 
-  /// Add-method footer button (mockup: "Agregar método").
+  /// Add-method footer button.
   static String get addMethod =>
-      Intl.message('Agregar método', name: 'addMethod');
+      AppLocale.t(en: 'Add method', es: 'Agregar método');
 
-  /// Success-screen title (mockup: "Membresía adquirida").
+  /// Success-screen title.
   static String get membershipAcquired =>
-      Intl.message('Membresía adquirida', name: 'membershipAcquired');
+      AppLocale.t(en: 'Membership acquired', es: 'Membresía adquirida');
 
-  /// Success-screen CTA that resets to the initial menu (mockup: "Menú inicial").
+  /// Success-screen CTA that resets to the initial menu.
   static String get initialMenu =>
-      Intl.message('Menú inicial', name: 'initialMenu');
+      AppLocale.t(en: 'Home menu', es: 'Menú inicial');
 
-  /// Profile "Pago" section box title (mockup: "Pago").
+  /// Profile payment section box title.
   static String get paymentSectionTitle =>
-      Intl.message('Pago', name: 'paymentSectionTitle');
+      AppLocale.t(en: 'Payment', es: 'Pago');
 
-  /// Card-graphic "card holder" caption (mockup: "CARD HOLDER").
+  /// Card-graphic "card holder" caption.
   static String get cardHolderTag =>
-      Intl.message('CARD HOLDER', name: 'cardHolderTag');
+      AppLocale.t(en: 'CARD HOLDER', es: 'TITULAR');
 
-  /// Card-graphic "expires" caption (mockup: "EXPIRES").
+  /// Card-graphic "expires" caption.
   static String get cardExpiresTag =>
-      Intl.message('EXPIRES', name: 'cardExpiresTag');
+      AppLocale.t(en: 'EXPIRES', es: 'VENCE');
 }
