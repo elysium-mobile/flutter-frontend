@@ -11,12 +11,12 @@ import '../../domain/models/metric_point.dart';
 import '../../domain/models/team_metrics.dart';
 import '../../domain/models/work_team.dart';
 
-/// HR Analytics ("Reportes") panel — the fourth tab of the authenticated shell.
+/// HR Analytics ("Reports") panel — the fourth tab of the authenticated shell.
 ///
-/// The layout is strictly state-driven: it renders the "Elegir equipo" selector
+/// The layout is strictly state-driven: it renders the "Choose team" selector
 /// permanently, and mounts the metrics canvas (quad panel, historical chart and
 /// action footer) only while a concrete team is selected. Choosing the neutral
-/// "Ninguno" option collapses the entire lower section out of the widget tree.
+/// "None" option collapses the entire lower section out of the widget tree.
 /// All state is owned by [HrReportsBloc]; this view holds no business logic.
 class HrReportsView extends StatelessWidget {
   /// Creates an [HrReportsView].
@@ -36,6 +36,16 @@ class HrReportsView extends StatelessWidget {
         listenWhen: (previous, current) =>
             previous.reportRequestedAt != current.reportRequestedAt &&
             current.reportRequestedAt != null,
+        // State-emission boundary: the builder consumes only the structural
+        // fields. The "Generate report" acknowledgement mutates just
+        // [reportRequestedAt], so gating rebuilds on the structural fields keeps
+        // that transient tick a listener-only event and spares the entire body
+        // (selector, metrics canvas and chart) a redundant rebuild.
+        buildWhen: (HrReportsState previous, HrReportsState current) =>
+            previous.status != current.status ||
+            previous.teams != current.teams ||
+            previous.selectedTeam != current.selectedTeam ||
+            previous.metrics != current.metrics,
         listener: (BuildContext context, HrReportsState state) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
@@ -168,10 +178,10 @@ class _MetricsCanvas extends StatelessWidget {
   }
 }
 
-/// Stylized "Elegir equipo" dropdown selector.
+/// Stylized "Choose team" dropdown selector.
 ///
-/// Presents the neutral "Ninguno" entry followed by every assigned team; the
-/// null value maps to "Ninguno" and collapses the metrics canvas.
+/// Presents the neutral "None" entry followed by every assigned team; the
+/// null value maps to "None" and collapses the metrics canvas.
 class _TeamSelector extends StatelessWidget {
   const _TeamSelector({
     required this.teams,
@@ -382,8 +392,16 @@ class _HistoricalProgressChart extends StatelessWidget {
                       style: AppTypography.subtitle,
                     ),
                   )
-                : CustomPaint(
-                    painter: _LineChartPainter(history: history),
+                // Dedicated compositing layer: isolating the canvas behind a
+                // [RepaintBoundary] prevents ambient repaints (e.g. the parent
+                // AnimatedSwitcher fade) from re-rasterizing the chart, while
+                // `willChange: false` marks the painted layer as cacheable.
+                : RepaintBoundary(
+                    child: CustomPaint(
+                      isComplex: true,
+                      willChange: false,
+                      painter: _LineChartPainter(history: history),
+                    ),
                   ),
           ),
         ],
@@ -404,10 +422,16 @@ class _LineChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double minValue =
-        history.map((p) => p.value).reduce((a, b) => a < b ? a : b);
-    final double maxValue =
-        history.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    // Single linear scan for the series extrema: one pass over [history]
+    // replaces the previous two lazy `map().reduce()` pipelines, halving the
+    // per-frame iteration count and avoiding the transient iterable allocations.
+    double minValue = history.first.value;
+    double maxValue = minValue;
+    for (int i = 1; i < history.length; i++) {
+      final double value = history[i].value;
+      if (value < minValue) minValue = value;
+      if (value > maxValue) maxValue = value;
+    }
     final double span = (maxValue - minValue).abs() < 1e-9
         ? 1
         : (maxValue - minValue);

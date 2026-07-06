@@ -11,6 +11,7 @@ import '../../../shared/presentation/design/app_typography.dart';
 import '../../../shared/presentation/i18n/app_strings.dart';
 import '../../../payment/presentation/navigation/payment_routes.dart';
 import '../../application/bloc/session_bloc.dart';
+import '../../domain/models/user.dart';
 import '../navigation/iam_routes.dart';
 
 /// Profile view ("My Profile") of the authenticated shell.
@@ -43,10 +44,15 @@ class ProfileView extends StatelessWidget {
           ),
         ],
       ),
-      body: BlocBuilder<SessionBloc, SessionState>(
-        builder: (BuildContext context, SessionState state) {
-          final String name = state.user?.username ?? '';
-          final String email = state.user?.email ?? '';
+      // Selective rebuild boundary: the profile only reflects the identity of
+      // the authenticated user. Selecting the value-equal [User] entity (its
+      // equality is hand-written) collapses any session emission that does not
+      // change the displayed identity into a no-op.
+      body: BlocSelector<SessionBloc, SessionState, User?>(
+        selector: (SessionState state) => state.user,
+        builder: (BuildContext context, User? user) {
+          final String name = user?.username ?? '';
+          final String email = user?.email ?? '';
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(

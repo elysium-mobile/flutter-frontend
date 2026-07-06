@@ -259,3 +259,94 @@ dart run build_runner build     # regenerate parts
 - Keep `domain/` pure; keep serialization/DB in `data/`; keep UI logic out of BLoCs.
 - Run `flutter analyze` and, if generated code was touched, `build_runner`, before considering a task done.
 ```
+
+---
+
+## 13. Architectural Optimization and Scaling Conventions
+
+> Titled "Architectural Optimization and Scaling Conventions" per the performance
+> engineering cycle. Numbered `13` because section `7` (Backend Connection) is
+> already the canonical ELYSIUM contract — the section number was advanced rather
+> than duplicated to keep the handbook's structure unambiguous.
+
+This section codifies the performance baseline established during the frame-stability
+and memory-pressure hardening pass. These are **enforced constraints**, not
+suggestions — new code must not regress below them.
+
+### 13.1 Selective rebuild boundaries (state emission)
+
+- **Prefer `BlocSelector` over `BlocBuilder`** whenever a view consumes only a
+  narrow projection of a bloc's state. Select the smallest value the subtree
+  actually renders (e.g. `state.user`, `state.user?.username`), never the whole
+  state object. The selector's `==` result gates the rebuild, so value-equal
+  re-emissions are dropped before the builder runs.
+  - Reference: `main_menu_view.dart` selects `username`; `profile_view.dart`
+    selects the value-equal `User?` entity.
+- **Add `buildWhen` to every `BlocBuilder`/`BlocConsumer` whose state carries
+  fields the builder does not consume.** Gate rebuilds on the *structural* fields
+  only. Transient acknowledgement fields (timestamps, one-shot flags such as
+  `reportRequestedAt`) must be routed through `listenWhen`/`listener`, never
+  through the builder.
+  - Reference: `hr_reports_view.dart` — the "Generate report" tick is a
+    listener-only event; `buildWhen` compares `status`/`teams`/`selectedTeam`/
+    `metrics`.
+- **State objects remain `Equatable`** (or hand-written value equality in
+  `domain/`) so both the bloc's internal dedupe and the selector comparisons are
+  cheap and correct. Never put a non-value-equal field in `props`.
+
+### 13.2 Repaint isolation and immutable subtrees
+
+- **Hoist state-independent subtrees to `const`.** Any widget whose inputs are
+  compile-time constants (e.g. a card fed a `static const` list) must be
+  constructed `const` so it is excluded from ancestor rebuilds.
+  - Reference: `const _AssignedTeamsCard(teams: _sampleTeams)`.
+- **Wrap every `CustomPaint`/`CustomPainter` in a `RepaintBoundary`** so ambient
+  repaints (animation ticks, fades, scrolls) do not force re-rasterization of the
+  painted layer. Set `isComplex: true` and `willChange: false` on static charts to
+  mark the layer cacheable; only set `willChange: true` for painters that animate
+  every frame.
+  - Reference: `_HistoricalProgressChart` in `hr_reports_view.dart`.
+- **`CustomPainter.shouldRepaint` must compare inputs by identity/value**, never
+  return `true` unconditionally.
+
+### 13.3 Stream and resource lifecycle hardening (baseline — do not regress)
+
+The following disposal discipline is already established and is **mandatory** for
+every new bloc, adapter, and stateful view:
+
+- Every `StreamSubscription` created in a bloc/adapter is stored in a
+  `late final` field and cancelled in `close()`/`dispose()`.
+  (`session_bloc.dart`, `membership_gate_bloc.dart`, `GoRouterRefreshStream`.)
+- Every `StreamController` is `.close()`d in the owner's `dispose()`, and writes
+  are guarded with an `isClosed` check. (`firebase_authentication_store.dart`.)
+- Every `TextEditingController`/`AnimationController` lives in a `StatefulWidget`,
+  is created in `initState`, and is `dispose()`d in `dispose()`.
+  (`add_card_view.dart`.)
+- The `ApiClient` closes its owned `http.Client` in `dispose()`, and only when it
+  created it (`_ownsClient`).
+- Drift writes run off the UI isolate via `NativeDatabase.createInBackground`;
+  cache-replacement operations are wrapped in a single `transaction`/`batch` so a
+  refresh never leaves partially-stale rows.
+
+### 13.4 Data-collection and mapping efficiency
+
+- **Domain/DB mappers stay single-pass.** `.toDomain()` / `.toCompanion()`
+  extensions map one row/response to one entity with no nested loops and no
+  intermediate list cloning. Repository loaders use one `.map(...).toList()` per
+  transformation stage.
+- **Hot paths (painters, per-frame builds) must not allocate throwaway
+  iterables.** Compute extrema/aggregates with a single explicit `for` loop rather
+  than chained lazy `map().reduce()` pipelines.
+  - Reference: `_LineChartPainter.paint` computes `min`/`max` in one scan.
+- **Never re-derive an aggregate inside `itemBuilder`.** Compute list-wide values
+  (e.g. `maxPrice`) once in the builder body, above the `ListView`, and close over
+  the result.
+
+### 13.5 Verification gate
+
+Before considering any optimization complete:
+
+1. `flutter analyze` — **zero** issues.
+2. `dart run build_runner build` — clean, when any annotated class/table changed.
+3. No behavioral regression: selective-rebuild and repaint changes must be
+   output-equivalent; only the rebuild/repaint *frequency* may change.

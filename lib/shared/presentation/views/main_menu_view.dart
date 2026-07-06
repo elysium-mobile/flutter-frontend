@@ -48,9 +48,13 @@ class MainMenuView extends StatelessWidget {
         centerTitle: true,
         title: Text(AppStrings.dashboardTitle, style: AppTypography.title),
       ),
-      body: BlocBuilder<SessionBloc, SessionState>(
-        builder: (BuildContext context, SessionState state) {
-          final String name = state.user?.username ?? '';
+      // Selective rebuild boundary: only the greeting name is consumed here, so
+      // a `BlocSelector` narrows the rebuild trigger to that single derived
+      // value. Emissions that leave the username unchanged are dropped before
+      // the subtree is ever re-run.
+      body: BlocSelector<SessionBloc, SessionState, String>(
+        selector: (SessionState state) => state.user?.username ?? '',
+        builder: (BuildContext context, String name) {
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
@@ -74,7 +78,10 @@ class MainMenuView extends StatelessWidget {
                   style: AppTypography.subtitle,
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                _AssignedTeamsCard(teams: _sampleTeams),
+                // Hoisted to a compile-time constant: the assigned-teams subtree
+                // is identity-stable across greeting rebuilds, so the framework
+                // skips re-building it entirely.
+                const _AssignedTeamsCard(teams: _sampleTeams),
               ],
             ),
           );
