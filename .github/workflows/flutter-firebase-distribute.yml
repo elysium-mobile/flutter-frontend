@@ -38,6 +38,17 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Create Configuration File (lib/config.json)
+        run: |
+          cat <<EOF > lib/config.json
+          {
+            "BACKEND_BASE_URL": "${{ secrets.BACKEND_BASE_URL }}",
+            "API_KEY_GEMINI": "${{ secrets.API_KEY_GEMINI }}",
+            "GOOGLE_OAUTH_CLIENT": "${{ secrets.GOOGLE_OAUTH_CLIENT }}",
+            "PUBLISHABLE_KEY_STRIPE": "${{ secrets.PUBLISHABLE_KEY_STRIPE }}"
+          }
+          EOF
+
       - name: Create google-services.json
         run: |
           cat <<EOF > android/app/google-services.json
@@ -76,12 +87,7 @@ jobs:
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
         run: |
-          flutter build apk --debug \
-            --dart-define=API_BASE_URL=https://api.softwork.elysium.example/ \
-            --dart-define=FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} \
-            --dart-define=FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }} \
-            --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
-            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+          flutter build apk --debug --dart-define-from-file=lib/config.json
 
       - name: Upload Android to Firebase App Distribution
         uses: w9jds/firebase-action@v2.2.2
