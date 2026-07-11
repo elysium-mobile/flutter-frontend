@@ -14,6 +14,7 @@ import '../../../shared/presentation/design/app_typography.dart';
 import '../../../shared/presentation/i18n/app_strings.dart';
 import '../../application/bloc/login_bloc.dart';
 import '../navigation/iam_routes.dart';
+import 'registration_view.dart';
 
 /// Login screen route widget.
 ///
@@ -62,16 +63,33 @@ class _LoginScreenState extends State<_LoginScreen> {
   void _onStateChanged(BuildContext context, LoginState state) {
     if (state.status == LoginStatus.success) {
       context.goNamed(IamRoutes.sessionStartedName);
+    } else if (state.status == LoginStatus.registrationRequired) {
+      // Verified Google identity without an ELYSIUM account yet: route into the
+      // RRHH sign-up form, carrying the verified token via in-memory `extra`.
+      context.goNamed(
+        IamRoutes.registerName,
+        extra: GoogleSignUpArgs(
+          idToken: state.googleIdToken ?? '',
+          email: state.googleEmail ?? '',
+        ),
+      );
     } else if (state.status == LoginStatus.failure) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
             backgroundColor: AppColors.danger,
-            content: Text(AppStrings.somethingWentWrong),
+            content: Text(_readableError(state.errorMessage)),
           ),
         );
     }
+  }
+
+  /// Presents the specific backend/transport failure when available, stripping
+  /// the leading `Exception:` noise, and falls back to the generic message.
+  String _readableError(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return AppStrings.somethingWentWrong;
+    return raw.replaceFirst(RegExp(r'^Exception:\s*'), '').trim();
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 
 import '../../domain/models/auth_session.dart';
+import '../../domain/models/google_auth_result.dart';
 import '../../domain/stores/authentication_store.dart';
 
 part 'login_event.dart';
@@ -65,11 +66,35 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     );
   }
 
+  /// Runs the two-phase Google flow.
+  ///
+  /// A registered identity resolves to a session; an unregistered one surfaces
+  /// as [LoginStatus.registrationRequired], carrying the verified id token and
+  /// email so the view can route into the RRHH sign-up form.
   Future<void> _onGoogleSubmitted(
     LoginGoogleSubmitted event,
     Emitter<LoginState> emit,
-  ) {
-    return _runAuthentication(emit, _authenticationStore.signInWithGoogle);
+  ) async {
+    emit(state.copyWith(status: LoginStatus.submitting, errorMessage: null));
+    try {
+      final GoogleAuthResult result =
+          await _authenticationStore.authenticateWithGoogle();
+      switch (result) {
+        case GoogleAuthenticated(:final AuthSession session):
+          emit(state.copyWith(status: LoginStatus.success, session: session));
+        case GoogleRegistrationRequired(:final String idToken, :final String email):
+          emit(state.copyWith(
+            status: LoginStatus.registrationRequired,
+            googleIdToken: idToken,
+            googleEmail: email,
+          ));
+      }
+    } catch (error) {
+      emit(state.copyWith(
+        status: LoginStatus.failure,
+        errorMessage: error.toString(),
+      ));
+    }
   }
 
   /// Shared executor emitting the submitting → success/failure lifecycle and

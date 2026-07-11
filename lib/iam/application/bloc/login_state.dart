@@ -11,6 +11,10 @@ enum LoginStatus {
   /// Authentication succeeded; a session is available.
   success,
 
+  /// Google identity verified but no ELYSIUM account exists yet; the RRHH
+  /// sign-up form must be completed. Inspect [LoginState.googleIdToken].
+  registrationRequired,
+
   /// Authentication failed; inspect [LoginState.errorMessage].
   failure,
 }
@@ -25,6 +29,8 @@ final class LoginState extends Equatable {
     this.status = LoginStatus.idle,
     this.errorMessage,
     this.session,
+    this.googleIdToken,
+    this.googleEmail,
   });
 
   /// Current email field value.
@@ -45,14 +51,22 @@ final class LoginState extends Equatable {
   /// Established session when [status] is [LoginStatus.success].
   final AuthSession? session;
 
+  /// Verified Google ID token to replay on the RRHH sign-up form, present when
+  /// [status] is [LoginStatus.registrationRequired].
+  final String? googleIdToken;
+
+  /// Google account email accompanying [googleIdToken] (display/lock only).
+  final String? googleEmail;
+
   /// Whether the form holds non-empty credentials and is not mid-submission.
   bool get canSubmit =>
       email.trim().isNotEmpty &&
       password.isNotEmpty &&
       status != LoginStatus.submitting;
 
-  /// Returns a copy overriding the provided fields. [errorMessage] and
-  /// [session] use a sentinel so they can be explicitly cleared to `null`.
+  /// Returns a copy overriding the provided fields. [errorMessage], [session],
+  /// [googleIdToken] and [googleEmail] use a sentinel so they can be explicitly
+  /// cleared to `null`.
   LoginState copyWith({
     String? email,
     String? password,
@@ -60,6 +74,8 @@ final class LoginState extends Equatable {
     LoginStatus? status,
     Object? errorMessage = _sentinel,
     Object? session = _sentinel,
+    Object? googleIdToken = _sentinel,
+    Object? googleEmail = _sentinel,
   }) {
     return LoginState(
       email: email ?? this.email,
@@ -72,6 +88,12 @@ final class LoginState extends Equatable {
       session: identical(session, _sentinel)
           ? this.session
           : session as AuthSession?,
+      googleIdToken: identical(googleIdToken, _sentinel)
+          ? this.googleIdToken
+          : googleIdToken as String?,
+      googleEmail: identical(googleEmail, _sentinel)
+          ? this.googleEmail
+          : googleEmail as String?,
     );
   }
 
@@ -83,6 +105,8 @@ final class LoginState extends Equatable {
         status,
         errorMessage,
         session,
+        googleIdToken,
+        googleEmail,
       ];
 }
 

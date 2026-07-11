@@ -6,13 +6,13 @@ enum HrReportsStatus {
   /// Nothing has been requested yet.
   initial,
 
-  /// The assigned teams are being fetched.
-  loadingTeams,
+  /// The selectable companies are being fetched.
+  loadingCompanies,
 
-  /// Metrics for the selected team are being fetched.
+  /// Aggregated metrics for the selected company are being fetched.
   loadingMetrics,
 
-  /// Teams (and, when a team is selected, its metrics) are available.
+  /// Companies (and, when one is selected, its metrics) are available.
   ready,
 
   /// A load failed; inspect [HrReportsState.errorMessage].
@@ -24,69 +24,69 @@ final class HrReportsState extends Equatable {
   /// Creates an [HrReportsState].
   const HrReportsState({
     this.status = HrReportsStatus.initial,
-    this.teams = const <WorkTeam>[],
-    this.selectedTeam,
-    this.metrics = const TeamMetrics.empty(),
+    this.companies = const <Company>[],
+    this.selectedCompany,
+    this.diagnosis,
     this.errorMessage,
-    this.reportRequestedAt,
   });
 
   /// Current lifecycle status of the flow.
   final HrReportsStatus status;
 
-  /// Assigned teams populating the "Choose team" selector.
-  final List<WorkTeam> teams;
+  /// Companies populating the selector.
+  final List<Company> companies;
 
-  /// Currently selected team, or `null` before any selection.
-  final WorkTeam? selectedTeam;
+  /// Currently selected company, or `null` before any selection.
+  final Company? selectedCompany;
 
-  /// Metrics for [selectedTeam]; a zeroed snapshot until one is loaded.
-  final TeamMetrics metrics;
+  /// Full climate diagnosis for [selectedCompany] (status + analysis +
+  /// metrics), or `null` until one is loaded. Retained in full so the
+  /// "Generate report" detail can render without another network call.
+  final ClimateDiagnosis? diagnosis;
 
   /// Raw diagnostic error message when [status] is [HrReportsStatus.failure].
   final String? errorMessage;
 
-  /// Timestamp of the most recent "Generate report" request, or `null`.
-  final DateTime? reportRequestedAt;
+  /// Aggregated metrics projected from [diagnosis]; a zeroed snapshot when
+  /// none is loaded. Drives the summary tiles.
+  ClimateMetrics get metrics =>
+      diagnosis?.metrics ?? const ClimateMetrics.empty();
 
   /// Whether the metrics panel should render its loading affordance.
   bool get isLoadingMetrics => status == HrReportsStatus.loadingMetrics;
 
-  /// Returns a copy overriding the provided fields. [selectedTeam],
-  /// [errorMessage] and [reportRequestedAt] use a sentinel so they can be
-  /// explicitly cleared to `null`.
+  /// Returns a copy overriding the provided fields. [selectedCompany],
+  /// [diagnosis] and [errorMessage] use a sentinel so they can be explicitly
+  /// cleared to `null`.
   HrReportsState copyWith({
     HrReportsStatus? status,
-    List<WorkTeam>? teams,
-    Object? selectedTeam = _sentinel,
-    TeamMetrics? metrics,
+    List<Company>? companies,
+    Object? selectedCompany = _sentinel,
+    Object? diagnosis = _sentinel,
     Object? errorMessage = _sentinel,
-    Object? reportRequestedAt = _sentinel,
   }) {
     return HrReportsState(
       status: status ?? this.status,
-      teams: teams ?? this.teams,
-      selectedTeam: identical(selectedTeam, _sentinel)
-          ? this.selectedTeam
-          : selectedTeam as WorkTeam?,
-      metrics: metrics ?? this.metrics,
+      companies: companies ?? this.companies,
+      selectedCompany: identical(selectedCompany, _sentinel)
+          ? this.selectedCompany
+          : selectedCompany as Company?,
+      diagnosis: identical(diagnosis, _sentinel)
+          ? this.diagnosis
+          : diagnosis as ClimateDiagnosis?,
       errorMessage: identical(errorMessage, _sentinel)
           ? this.errorMessage
           : errorMessage as String?,
-      reportRequestedAt: identical(reportRequestedAt, _sentinel)
-          ? this.reportRequestedAt
-          : reportRequestedAt as DateTime?,
     );
   }
 
   @override
   List<Object?> get props => <Object?>[
         status,
-        teams,
-        selectedTeam,
-        metrics,
+        companies,
+        selectedCompany,
+        diagnosis,
         errorMessage,
-        reportRequestedAt,
       ];
 }
 

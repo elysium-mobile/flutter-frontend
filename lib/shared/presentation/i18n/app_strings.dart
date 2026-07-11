@@ -79,6 +79,49 @@ abstract final class AppStrings {
   static String get confirmPassword =>
       AppLocale.t(en: 'Confirm password', es: 'Confirmar contraseña');
 
+  // --- RRHH profile registration ---------------------------------------------
+
+  /// First-name field label.
+  static String get firstNameLabel =>
+      AppLocale.t(en: 'First name', es: 'Nombre');
+
+  /// Last-name field label.
+  static String get lastNameLabel =>
+      AppLocale.t(en: 'Last name', es: 'Apellido');
+
+  /// Phone-number field label.
+  static String get phoneNumberLabel =>
+      AppLocale.t(en: 'Phone number', es: 'Teléfono');
+
+  /// DNI field label.
+  static String get dniLabel => AppLocale.t(en: 'DNI', es: 'DNI');
+
+  /// Public/anonymous display-name field label.
+  static String get anonymousNameLabel =>
+      AppLocale.t(en: 'Public display name', es: 'Nombre público');
+
+  /// RRHH department field label.
+  static String get rrhhDepartmentLabel =>
+      AppLocale.t(en: 'HR department', es: 'Departamento de RRHH');
+
+  /// Status/hierarchy field label.
+  static String get statusHierarchyLabel =>
+      AppLocale.t(en: 'Hierarchy / role', es: 'Jerarquía / cargo');
+
+  /// Account-email (locked) field label used in the Google sign-up form.
+  static String get accountEmailLabel =>
+      AppLocale.t(en: 'Account email', es: 'Correo de la cuenta');
+
+  /// "Complete sign-up" CTA used to finish a Google-backed registration.
+  static String get completeSignUp =>
+      AppLocale.t(en: 'Complete sign-up', es: 'Completar registro');
+
+  /// Intro shown when completing a Google registration.
+  static String get googleSignUpIntro => AppLocale.t(
+        en: 'Complete your RRHH profile to finish signing up with Google.',
+        es: 'Completa tu perfil de RRHH para terminar el registro con Google.',
+      );
+
   /// Inline error shown when the two passwords differ.
   static String get passwordsDoNotMatch => AppLocale.t(
         en: 'The passwords do not match.',
@@ -256,6 +299,12 @@ abstract final class AppStrings {
         es: 'No hay equipos asignados.',
       );
 
+  /// Empty-state copy when no companies are available to analyze.
+  static String get noCompaniesAvailable => AppLocale.t(
+        en: 'No companies available.',
+        es: 'No hay empresas disponibles.',
+      );
+
   /// Average-wellbeing metric box label.
   static String get averageWellbeing =>
       AppLocale.t(en: 'Average wellbeing', es: 'Bienestar promedio');
@@ -284,12 +333,18 @@ abstract final class AppStrings {
 
   /// Primary footer button label.
   static String get generateReport =>
-      AppLocale.t(en: 'Generate report', es: 'Generar reporte');
+      AppLocale.t(en: 'Visualize report', es: 'Ver reporte');
 
   /// Snackbar acknowledgement after requesting a report.
   static String get reportRequested => AppLocale.t(
         en: 'Report generation requested.',
         es: 'Generación de reporte solicitada.',
+      );
+
+  /// Loading-modal caption shown while the HR report is being generated.
+  static String get generatingReport => AppLocale.t(
+        en: 'Generating report…',
+        es: 'Generando reporte…',
       );
 
   // --- Payment (subscriptions & cards) ---------------------------------------
@@ -388,4 +443,120 @@ abstract final class AppStrings {
   /// Card-graphic "expires" caption.
   static String get cardExpiresTag =>
       AppLocale.t(en: 'EXPIRES', es: 'VENCE');
+
+  // --- HR AI Climate Assistant -----------------------------------------------
+
+  /// AI climate assistant screen title.
+  static String get aiAssistantTitle => AppLocale.t(
+        en: 'AI Climate Assistant',
+        es: 'Asistente de Clima IA',
+      );
+
+  /// Tooltip / entry-point label for the AI climate assistant.
+  static String get aiAssistantEntry => AppLocale.t(
+        en: 'AI climate diagnosis',
+        es: 'Diagnóstico de clima IA',
+      );
+
+  /// Company selector container label.
+  static String get chooseCompany =>
+      AppLocale.t(en: 'Choose company', es: 'Elegir empresa');
+
+  /// Neutral hint shown before a company is selected.
+  static String get selectCompanyHint =>
+      AppLocale.t(en: 'Select a company', es: 'Selecciona una empresa');
+
+  /// Optional-question field label.
+  static String get climateQuestionLabel =>
+      AppLocale.t(en: 'Question (optional)', es: 'Pregunta (opcional)');
+
+  /// Optional-question field hint.
+  static String get climateQuestionHint => AppLocale.t(
+        en: 'e.g. How is the work environment?',
+        es: 'p. ej. ¿Cómo está el ambiente laboral?',
+      );
+
+  /// Primary "analyze" button label.
+  static String get analyzeClimate =>
+      AppLocale.t(en: 'Analyze climate', es: 'Analizar clima');
+
+  /// In-flight diagnosis progress label.
+  static String get analyzingClimate =>
+      AppLocale.t(en: 'Analyzing climate…', es: 'Analizando clima…');
+
+  /// Empty-state prompt before any diagnosis is requested.
+  static String get selectCompanyToStart => AppLocale.t(
+        en: 'Select a company and request a diagnosis.',
+        es: 'Selecciona una empresa y solicita un diagnóstico.',
+      );
+
+  /// Localized "Good" climate verdict label (`BUENO`).
+  static String get statusGood => AppLocale.t(en: 'Good', es: 'Bueno');
+
+  /// Localized "Regular" climate verdict label (`REGULAR`).
+  static String get statusRegular => AppLocale.t(en: 'Regular', es: 'Regular');
+
+  /// Localized "Critical" climate verdict label (`CRITICO`).
+  static String get statusCritical =>
+      AppLocale.t(en: 'Critical', es: 'Crítico');
+
+  /// Localized fallback climate verdict label (unknown token).
+  static String get statusUnknown =>
+      AppLocale.t(en: 'Unknown', es: 'Desconocido');
+
+  /// Analysis panel title.
+  static String get analysisTitle => AppLocale.t(en: 'Analysis', es: 'Análisis');
+
+  /// Metrics card title.
+  static String get metricsTitle => AppLocale.t(en: 'Metrics', es: 'Métricas');
+
+  /// Average-performance metric label.
+  static String get metricAveragePerformance => AppLocale.t(
+        en: 'Average performance',
+        es: 'Desempeño promedio',
+      );
+
+  /// Total-evaluations metric label.
+  static String get metricEvaluations =>
+      AppLocale.t(en: 'Evaluations', es: 'Evaluaciones');
+
+  /// Positive-survey-rate metric label.
+  static String get metricPositiveSurveyRate => AppLocale.t(
+        en: 'Positive survey rate',
+        es: 'Encuestas positivas',
+      );
+
+  /// Total-survey-answers metric label.
+  static String get metricSurveyAnswers =>
+      AppLocale.t(en: 'Survey answers', es: 'Respuestas');
+
+  /// Total-reports metric label.
+  static String get metricReports =>
+      AppLocale.t(en: 'Reports', es: 'Reportes');
+
+  /// Total-forum-messages metric label.
+  static String get metricForumMessages =>
+      AppLocale.t(en: 'Forum messages', es: 'Mensajes de foro');
+
+  /// "Reports by area" expansion-section title.
+  static String get reportsByAreaTitle =>
+      AppLocale.t(en: 'Reports by area', es: 'Reportes por área');
+
+  /// "Forum activity by area" expansion-section title.
+  static String get forumActivityByAreaTitle => AppLocale.t(
+        en: 'Forum activity by area',
+        es: 'Actividad de foro por área',
+      );
+
+  /// Lower-case "reports" count noun (per-area rows).
+  static String get reportsCountNoun =>
+      AppLocale.t(en: 'reports', es: 'reportes');
+
+  /// Lower-case "threads" count noun (per-area rows).
+  static String get threadsCountNoun =>
+      AppLocale.t(en: 'threads', es: 'hilos');
+
+  /// Lower-case "messages" count noun (per-area rows).
+  static String get messagesCountNoun =>
+      AppLocale.t(en: 'messages', es: 'mensajes');
 }

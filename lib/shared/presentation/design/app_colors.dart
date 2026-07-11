@@ -29,6 +29,9 @@ abstract final class AppColors {
   /// Semantic danger color.
   static const Color danger = Color(0xFFC94040);
 
+  /// Semantic warning color — Amber (used by the "REGULAR" climate verdict).
+  static const Color warning = Color(0xFFE0A100);
+
   /// Semantic positive color — Green (workforce headcount metric).
   static const Color green = Color(0xFF2E9E5B);
 

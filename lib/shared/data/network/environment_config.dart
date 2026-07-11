@@ -14,12 +14,16 @@ abstract final class EnvironmentConfig {
   /// The base URL string targeting the authoritative SoftWork/ELYSIUM backend
   /// services.
   ///
-  /// Defaults to the documented development host (`http://localhost:8092`);
-  /// override per environment via `--dart-define=API_BASE_URL=...` (production
-  /// listens on `${PORT:8080}`).
+  /// Injected via the compile-time configuration file
+  /// (`--dart-define-from-file=lib/config.json`, key `BACKEND_BASE_URL`), which
+  /// overrides the default below. A non-secret production default is baked in so
+  /// the app still reaches the backend when a build forgets the config flag —
+  /// without it, an empty host makes every request (starting with login) fail.
+  /// A trailing slash is tolerated — request composition normalizes it (see
+  /// [ApiClient]).
   static const String apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:8092',
+    'BACKEND_BASE_URL',
+    defaultValue: 'https://api.elysium-mobile.online',
   );
 
   /// Root path prefix prepended to every relative API endpoint.
@@ -43,10 +47,35 @@ abstract final class EnvironmentConfig {
     defaultValue: false,
   );
 
-  /// Google OAuth Web Client Server Identifier required for credential bridging.
+  /// Google OAuth 2.0 Client Identifier — the expected audience of Google ID
+  /// tokens and the `serverClientId` used by the Google Sign-In credential
+  /// bridge.
+  ///
+  /// Injected via the compile-time configuration file (key `GOOGLE_OAUTH_CLIENT`,
+  /// consumed through `--dart-define-from-file=lib/config.json`). No inline
+  /// default: an omitted key resolves to the empty string.
   static const String googleServerClientId = String.fromEnvironment(
-    'GOOGLE_SERVER_CLIENT_ID',
+    'GOOGLE_OAUTH_CLIENT',
   );
+
+  /// Google Gemini (GenAI) secret API key used for direct AI client handshakes.
+  ///
+  /// Injected via the compile-time configuration file (key `API_KEY_GEMINI`,
+  /// consumed through `--dart-define-from-file=lib/config.json`). Reserved for
+  /// the AI-assistant integration; not yet consumed by a client-side Gemini
+  /// adapter (the dashboard-assistant endpoint remains a backend surface).
+  static const String geminiApiKey = String.fromEnvironment('API_KEY_GEMINI');
+
+  /// Stripe publishable key bound to the live payment gateway.
+  ///
+  /// Injected via the compile-time configuration file (key
+  /// `PUBLISHABLE_KEY_STRIPE`, consumed through
+  /// `--dart-define-from-file=lib/config.json`). Reserved for a client-side
+  /// Stripe SDK confirmation flow; the current checkout path confirms with a
+  /// server-issued PaymentIntent `client_secret`, so this key is not yet read at
+  /// runtime.
+  static const String stripePublishableKey =
+      String.fromEnvironment('PUBLISHABLE_KEY_STRIPE');
 
   /// Public cryptographic API identifier key for target Firebase projects.
   static const String firebaseApiKey = String.fromEnvironment(

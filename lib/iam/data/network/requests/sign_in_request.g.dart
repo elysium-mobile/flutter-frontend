@@ -7,4 +7,4 @@ part of 'sign_in_request.dart';
 // **************************************************************************
 
 Map<String, dynamic> _$SignInRequestToJson(SignInRequest instance) =>
-    <String, dynamic>{'id_token': instance.idToken};
+    <String, dynamic>{'email': instance.email, 'password': instance.password};

@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 
 import '../shared/data/local/app_database.dart';
 import '../shared/data/network/api_client.dart';
+import 'application/bloc/dashboard_assistant_bloc.dart';
 import 'application/bloc/hr_reports_bloc.dart';
 import 'data/network/dashboard_web_service.dart';
 import 'data/repositories/dashboard_repository_impl.dart';
@@ -36,6 +37,9 @@ abstract final class DashboardDependencies {
       )
       ..registerFactory<HrReportsBloc>(
         () => HrReportsBloc(repository: sl<DashboardRepository>()),
+      )
+      ..registerFactory<DashboardAssistantBloc>(
+        () => DashboardAssistantBloc(repository: sl<DashboardRepository>()),
       );
   }
 }

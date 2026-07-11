@@ -1,5 +1,6 @@
 import '../../../shared/domain/models/id.dart';
 import '../models/area_company.dart';
+import '../models/climate_diagnosis.dart';
 import '../models/company.dart';
 import '../models/team_metrics.dart';
 import '../models/work_team.dart';
@@ -31,4 +32,15 @@ abstract interface class DashboardRepository {
   /// Loads the aggregated workforce [TeamMetrics] for the team identified by
   /// [workTeamId], driving the quad-metrics panel and the progress chart.
   Future<TeamMetrics> loadTeamMetrics(Id workTeamId);
+
+  /// Requests an AI climate diagnosis for the company identified by [companyId].
+  ///
+  /// Wraps `POST /api/v1/dashboard-assistant`: the optional [question] steers
+  /// the analysis (a null/blank value runs a general climate diagnosis). This
+  /// is a live AI call with no cache fallback — a transport failure surfaces as
+  /// an [Exception] the application layer reduces into an error state.
+  Future<ClimateDiagnosis> diagnoseClimate({
+    required int companyId,
+    String? question,
+  });
 }

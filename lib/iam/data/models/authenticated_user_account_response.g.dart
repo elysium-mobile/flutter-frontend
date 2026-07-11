@@ -1,13 +1,15 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'user_response.dart';
+part of 'authenticated_user_account_response.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-UserResponse _$UserResponseFromJson(Map<String, dynamic> json) => UserResponse(
-  id: json['id'] as String,
-  name: json['name'] as String,
+AuthenticatedUserAccountResponse _$AuthenticatedUserAccountResponseFromJson(
+  Map<String, dynamic> json,
+) => AuthenticatedUserAccountResponse(
+  id: (json['id'] as num).toInt(),
   email: json['email'] as String,
+  token: json['token'] as String,
 );

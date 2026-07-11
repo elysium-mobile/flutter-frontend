@@ -2,12 +2,14 @@ import '../../../shared/data/local/app_database.dart';
 import '../../../shared/data/network/api_client.dart';
 import '../../../shared/domain/models/id.dart';
 import '../../domain/models/area_company.dart';
+import '../../domain/models/climate_diagnosis.dart';
 import '../../domain/models/company.dart';
 import '../../domain/models/team_metrics.dart';
 import '../../domain/models/work_team.dart';
 import '../../domain/repositories/dashboard_repository.dart';
 import '../models/db_mapping_extensions.dart';
 import '../network/dashboard_web_service.dart';
+import '../network/requests/analyze_dashboard_request.dart';
 
 /// Concrete [DashboardRepository] adapter bridging the ELYSIUM network streams
 /// directly into the local Drift cache.
@@ -87,5 +89,24 @@ class DashboardRepositoryImpl implements DashboardRepository {
     // presentation and state pipeline is already wired to consume real metrics
     // the moment the contract becomes available.
     return const TeamMetrics.empty();
+  }
+
+  @override
+  Future<ClimateDiagnosis> diagnoseClimate({
+    required int companyId,
+    String? question,
+  }) async {
+    // Live AI call: no cache fallback. The normalized negation of a null/blank
+    // question keeps the wire payload clean (an absent key runs the general
+    // diagnosis server-side). Any [ApiException] propagates for the bloc to
+    // reduce into an error state.
+    final String? trimmed = question?.trim();
+    final response = await _webService.analyzeDashboard(
+      AnalyzeDashboardRequest(
+        companyId: companyId,
+        question: (trimmed == null || trimmed.isEmpty) ? null : trimmed,
+      ),
+    );
+    return response.toDomain();
   }
 }

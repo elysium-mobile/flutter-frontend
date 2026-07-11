@@ -192,10 +192,18 @@ class ApiClient {
   }
 
   /// Builds the absolute [Uri] for [path], honoring the configured prefix.
+  ///
+  /// The configured base URL may carry a trailing slash (the
+  /// `BACKEND_BASE_URL` config value does); it is stripped before composition so
+  /// the join with the leading-slash prefix never yields a `//` segment.
   Uri _buildUri(String path, Map<String, String>? queryParameters) {
     final normalizedPath = path.startsWith('/') ? path : '/$path';
+    final base = EnvironmentConfig.apiBaseUrl.endsWith('/')
+        ? EnvironmentConfig.apiBaseUrl
+            .substring(0, EnvironmentConfig.apiBaseUrl.length - 1)
+        : EnvironmentConfig.apiBaseUrl;
     return Uri.parse(
-      '${EnvironmentConfig.apiBaseUrl}${EnvironmentConfig.apiPrefix}$normalizedPath',
+      '$base${EnvironmentConfig.apiPrefix}$normalizedPath',
     ).replace(queryParameters: queryParameters);
   }
 

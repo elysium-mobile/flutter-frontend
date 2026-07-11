@@ -19,7 +19,10 @@ class PaymentWebService {
   final ApiClient _apiClient;
 
   /// Relative endpoint listing the subscription plans.
-  static const String _membershipPlansPath = '/membership-plans';
+  ///
+  /// The backend route pluralizes **both** words (`/memberships-plans`), per the
+  /// ELYSIUM contract §6.4 — not the singular-first `/membership-plans`.
+  static const String _membershipPlansPath = '/memberships-plans';
 
   /// Relative endpoint listing the membership periods.
   static const String _membershipsPath = '/memberships';
@@ -27,7 +30,7 @@ class PaymentWebService {
   /// Relative endpoint creating purchase orders.
   static const String _ordersPath = '/orders';
 
-  /// Relative endpoint creating a Stripe PaymentIntent for an order.
+  /// Relative endpoint creating a Stripe Checkout Session for an order.
   static const String _stripeCheckoutPath = '/payments/stripe/checkout';
 
   /// Fetches the full list of plans as raw [MembershipPlanResponse] payloads.
@@ -61,8 +64,8 @@ class PaymentWebService {
     return OrderResponse.fromJson(json);
   }
 
-  /// Creates a Stripe PaymentIntent and returns the decoded
-  /// [StripeCheckoutResponse] carrying the client secret.
+  /// Creates a Stripe Checkout Session and returns the decoded
+  /// [StripeCheckoutResponse] carrying the hosted checkout URL and session id.
   Future<StripeCheckoutResponse> createStripeCheckout(
     CreateStripeCheckoutRequest request,
   ) async {

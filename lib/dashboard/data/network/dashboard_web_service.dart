@@ -1,7 +1,9 @@
 import '../../../shared/data/network/api_client.dart';
 import '../models/area_company_response.dart';
 import '../models/company_response.dart';
+import '../models/dashboard_insight_response.dart';
 import '../models/work_team_response.dart';
+import 'requests/analyze_dashboard_request.dart';
 
 /// Dashboard network mappings layered on top of the shared [ApiClient].
 ///
@@ -24,6 +26,9 @@ class DashboardWebService {
 
   /// Relative endpoint listing every work team.
   static const String _workTeamsPath = '/work-teams';
+
+  /// Relative endpoint of the AI dashboard assistant (climate diagnosis).
+  static const String _dashboardAssistantPath = '/dashboard-assistant';
 
   /// Fetches the full list of companies as raw [CompanyResponse] payloads.
   Future<List<CompanyResponse>> fetchCompanies() async {
@@ -51,5 +56,21 @@ class DashboardWebService {
         .cast<Map<String, dynamic>>()
         .map(WorkTeamResponse.fromJson)
         .toList();
+  }
+
+  /// Requests an AI climate diagnosis, decoding the single-object response into
+  /// a [DashboardInsightResponse].
+  ///
+  /// Issues an authenticated `POST` to the dashboard-assistant resource with the
+  /// serialized [request] body; transport concerns and error normalization are
+  /// delegated to the shared [ApiClient].
+  Future<DashboardInsightResponse> analyzeDashboard(
+    AnalyzeDashboardRequest request,
+  ) async {
+    final json = await _apiClient.post(
+      _dashboardAssistantPath,
+      body: request.toJson(),
+    );
+    return DashboardInsightResponse.fromJson(json);
   }
 }

@@ -1,51 +1,54 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 
-import '../../domain/models/team_metrics.dart';
-import '../../domain/models/work_team.dart';
+import '../../domain/models/climate_diagnosis.dart';
+import '../../domain/models/climate_metrics.dart';
+import '../../domain/models/company.dart';
 import '../../domain/repositories/dashboard_repository.dart';
 
 part 'hr_reports_event.dart';
 part 'hr_reports_state.dart';
 
-/// Unified Business Logic Component orchestrating the HR Analytics ("Reports")
-/// screen.
+/// Business Logic Component orchestrating the HR Analytics ("Reports") screen.
 ///
-/// It owns two coupled concerns behind a single state machine: loading the
-/// assigned work teams that populate the "Choose team" selector, and loading the
-/// [TeamMetrics] for whichever team is currently selected. UI intents are the
-/// only inputs; no navigation or widget concern leaks in here — the presentation
-/// layer reacts to [HrReportsStatus].
+/// The screen presents company-level HR metrics: it loads the selectable
+/// companies for the "Choose company" selector, then — for the selected company
+/// — fetches the aggregated [ClimateMetrics] from the RRHH `dashboard-assistant`
+/// endpoint (average performance, positive-survey rate, total reports and forum
+/// activity). UI intents are the only inputs; no navigation or widget concern
+/// leaks in here — the presentation layer reacts to [HrReportsStatus].
 class HrReportsBloc extends Bloc<HrReportsEvent, HrReportsState> {
   /// Creates an [HrReportsBloc] bound to the [DashboardRepository] port.
   HrReportsBloc({required DashboardRepository repository})
       : _repository = repository, // ignore: prefer_initializing_formals
         super(const HrReportsState()) {
     on<HrReportsStarted>(_onStarted);
-    on<HrReportsTeamSelected>(_onTeamSelected);
+    on<HrReportsCompanySelected>(_onCompanySelected);
     on<HrReportsSelectionCleared>(_onSelectionCleared);
-    on<HrReportsReportRequested>(_onReportRequested);
   }
 
   final DashboardRepository _repository;
 
-  /// Loads the assigned teams without auto-selecting one.
+  /// Loads the selectable companies without auto-selecting one.
   ///
-  /// The selector opens on the neutral "Ninguno" state ([selectedTeam] `null`),
-  /// so the metrics canvas stays collapsed until the HR specialist explicitly
-  /// picks a concrete team.
+  /// The selector opens on the neutral "Ninguno" state ([selectedCompany]
+  /// `null`), so the metrics canvas stays collapsed until a concrete company is
+  /// picked.
   Future<void> _onStarted(
     HrReportsStarted event,
     Emitter<HrReportsState> emit,
   ) async {
-    emit(state.copyWith(status: HrReportsStatus.loadingTeams, errorMessage: null));
+    emit(state.copyWith(
+      status: HrReportsStatus.loadingCompanies,
+      errorMessage: null,
+    ));
     try {
-      final teams = await _repository.loadAssignedTeams();
+      final companies = await _repository.loadCompanies();
       emit(state.copyWith(
         status: HrReportsStatus.ready,
-        teams: teams,
-        selectedTeam: null,
-        metrics: const TeamMetrics.empty(),
+        companies: companies,
+        selectedCompany: null,
+        diagnosis: null,
       ));
     } catch (error) {
       emit(state.copyWith(
@@ -55,25 +58,17 @@ class HrReportsBloc extends Bloc<HrReportsEvent, HrReportsState> {
     }
   }
 
-  /// Loads the metrics for the newly selected [WorkTeam].
-  Future<void> _onTeamSelected(
-    HrReportsTeamSelected event,
+  /// Selects a [Company] and loads its aggregated HR metrics.
+  Future<void> _onCompanySelected(
+    HrReportsCompanySelected event,
     Emitter<HrReportsState> emit,
   ) async {
     emit(state.copyWith(
       status: HrReportsStatus.loadingMetrics,
-      selectedTeam: event.team,
+      selectedCompany: event.company,
       errorMessage: null,
     ));
-    try {
-      final metrics = await _repository.loadTeamMetrics(event.team.id);
-      emit(state.copyWith(status: HrReportsStatus.ready, metrics: metrics));
-    } catch (error) {
-      emit(state.copyWith(
-        status: HrReportsStatus.failure,
-        errorMessage: error.toString(),
-      ));
-    }
+    await _loadMetricsFor(event.company, emit);
   }
 
   /// Collapses the metrics canvas back to the neutral "Ninguno" state.
@@ -83,21 +78,31 @@ class HrReportsBloc extends Bloc<HrReportsEvent, HrReportsState> {
   ) {
     emit(state.copyWith(
       status: HrReportsStatus.ready,
-      selectedTeam: null,
-      metrics: const TeamMetrics.empty(),
+      selectedCompany: null,
+      diagnosis: null,
       errorMessage: null,
     ));
   }
 
-  /// Handles the "Generate report" footer action.
-  ///
-  /// Report export is not part of the current backend contract, so this only
-  /// flags a transient acknowledgement the view can surface; no fabricated
-  /// artifact is produced.
-  void _onReportRequested(
-    HrReportsReportRequested event,
+  /// Shared loader: fetches the full [ClimateDiagnosis] for [company] via the
+  /// RRHH climate-diagnosis endpoint and reduces the outcome into state.
+  Future<void> _loadMetricsFor(
+    Company company,
     Emitter<HrReportsState> emit,
-  ) {
-    emit(state.copyWith(reportRequestedAt: DateTime.now()));
+  ) async {
+    try {
+      final ClimateDiagnosis diagnosis = await _repository.diagnoseClimate(
+        companyId: int.parse(company.id.value),
+      );
+      emit(state.copyWith(
+        status: HrReportsStatus.ready,
+        diagnosis: diagnosis,
+      ));
+    } catch (error) {
+      emit(state.copyWith(
+        status: HrReportsStatus.failure,
+        errorMessage: error.toString(),
+      ));
+    }
   }
 }

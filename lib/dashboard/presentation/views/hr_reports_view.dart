@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/presentation/components/gradient_button.dart';
 import '../../../shared/presentation/design/app_colors.dart';
@@ -7,17 +8,20 @@ import '../../../shared/presentation/design/app_dimensions.dart';
 import '../../../shared/presentation/design/app_typography.dart';
 import '../../../shared/presentation/i18n/app_strings.dart';
 import '../../application/bloc/hr_reports_bloc.dart';
-import '../../domain/models/metric_point.dart';
-import '../../domain/models/team_metrics.dart';
-import '../../domain/models/work_team.dart';
+import '../../domain/models/climate_diagnosis.dart';
+import '../../domain/models/climate_metrics.dart';
+import '../../domain/models/company.dart';
+import '../components/climate_report_content.dart';
+import '../navigation/dashboard_routes.dart';
 
 /// HR Analytics ("Reports") panel — the fourth tab of the authenticated shell.
 ///
-/// The layout is strictly state-driven: it renders the "Choose team" selector
-/// permanently, and mounts the metrics canvas (quad panel, historical chart and
-/// action footer) only while a concrete team is selected. Choosing the neutral
-/// "None" option collapses the entire lower section out of the widget tree.
-/// All state is owned by [HrReportsBloc]; this view holds no business logic.
+/// Company-level analytics: it renders the "Choose company" selector
+/// permanently, and mounts the quad-metrics canvas only while a concrete company
+/// is selected. The metrics are the real aggregated values returned by the RRHH
+/// `dashboard-assistant` endpoint (average performance, positive-survey rate,
+/// total reports, forum activity). Choosing the neutral "None" option collapses
+/// the lower section. All state is owned by [HrReportsBloc].
 class HrReportsView extends StatelessWidget {
   /// Creates an [HrReportsView].
   const HrReportsView({super.key});
@@ -31,33 +35,45 @@ class HrReportsView extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         title: Text(AppStrings.hrReportsTitle, style: AppTypography.title),
+        actions: <Widget>[
+          IconButton(
+            tooltip: AppStrings.aiAssistantEntry,
+            icon: const Icon(
+              Icons.auto_awesome_rounded,
+              color: AppColors.primaryNavy,
+            ),
+            onPressed: () =>
+                context.pushNamed(DashboardRoutes.aiAssistantName),
+          ),
+        ],
       ),
       body: BlocConsumer<HrReportsBloc, HrReportsState>(
-        listenWhen: (previous, current) =>
-            previous.reportRequestedAt != current.reportRequestedAt &&
-            current.reportRequestedAt != null,
-        // State-emission boundary: the builder consumes only the structural
-        // fields. The "Generate report" acknowledgement mutates just
-        // [reportRequestedAt], so gating rebuilds on the structural fields keeps
-        // that transient tick a listener-only event and spares the entire body
-        // (selector, metrics canvas and chart) a redundant rebuild.
-        buildWhen: (HrReportsState previous, HrReportsState current) =>
-            previous.status != current.status ||
-            previous.teams != current.teams ||
-            previous.selectedTeam != current.selectedTeam ||
-            previous.metrics != current.metrics,
+        // Surface a failed generation once, as a snackbar; the loading modal is
+        // driven separately by [HrReportsState.isLoadingMetrics].
+        listenWhen: (HrReportsState previous, HrReportsState current) =>
+            previous.status != current.status &&
+            current.status == HrReportsStatus.failure,
         listener: (BuildContext context, HrReportsState state) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
-              SnackBar(content: Text(AppStrings.reportRequested)),
+              SnackBar(
+                backgroundColor: AppColors.danger,
+                content: Text(_readableError(state.errorMessage)),
+              ),
             );
         },
+        buildWhen: (HrReportsState previous, HrReportsState current) =>
+            previous.status != current.status ||
+            previous.companies != current.companies ||
+            previous.selectedCompany != current.selectedCompany ||
+            previous.metrics != current.metrics,
         builder: (BuildContext context, HrReportsState state) {
-          if (state.status == HrReportsStatus.loadingTeams) {
+          if (state.status == HrReportsStatus.loadingCompanies) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (state.status == HrReportsStatus.failure) {
+          if (state.status == HrReportsStatus.failure &&
+              state.companies.isEmpty) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
@@ -69,7 +85,12 @@ class HrReportsView extends StatelessWidget {
               ),
             );
           }
-          return _ReportsBody(state: state);
+          return Stack(
+            children: <Widget>[
+              _ReportsBody(state: state),
+              if (state.isLoadingMetrics) const _LoadingModal(),
+            ],
+          );
         },
       ),
     );
@@ -85,13 +106,14 @@ class _ReportsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.teams.isEmpty) {
+    if (state.companies.isEmpty) {
       return Center(
-        child: Text(AppStrings.noAssignedTeams, style: AppTypography.subtitle),
+        child: Text(AppStrings.noCompaniesAvailable,
+            style: AppTypography.subtitle),
       );
     }
 
-    final WorkTeam? selectedTeam = state.selectedTeam;
+    final Company? selectedCompany = state.selectedCompany;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
@@ -101,12 +123,12 @@ class _ReportsBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _TeamSelector(
-            teams: state.teams,
-            selectedTeam: selectedTeam,
-            onSelected: (WorkTeam team) => context
+          _CompanySelector(
+            companies: state.companies,
+            selectedCompany: selectedCompany,
+            onSelected: (Company company) => context
                 .read<HrReportsBloc>()
-                .add(HrReportsTeamSelected(team)),
+                .add(HrReportsCompanySelected(company)),
             onCleared: () => context
                 .read<HrReportsBloc>()
                 .add(const HrReportsSelectionCleared()),
@@ -126,15 +148,17 @@ class _ReportsBody extends StatelessWidget {
                 ),
               );
             },
-            child: selectedTeam == null
+            child: selectedCompany == null
                 ? const SizedBox.shrink(key: ValueKey<String>('none'))
                 : _MetricsCanvas(
-                    key: ValueKey<String>(selectedTeam.id.value),
+                    key: ValueKey<String>(selectedCompany.id.value),
                     metrics: state.metrics,
                     isLoading: state.isLoadingMetrics,
-                    onGenerate: () => context
-                        .read<HrReportsBloc>()
-                        .add(const HrReportsReportRequested()),
+                    // Enabled only once a diagnosis is loaded; opens the full
+                    // report with no extra network call.
+                    onGenerate: state.diagnosis == null
+                        ? null
+                        : () => _showReportSheet(context, state.diagnosis!),
                   ),
           ),
         ],
@@ -143,10 +167,7 @@ class _ReportsBody extends StatelessWidget {
   }
 }
 
-/// Comprehensive metrics canvas mounted only while a concrete team is selected.
-///
-/// Bundles the quad-metrics panel, the historical progress chart and the
-/// "Generar reporte" footer button into a single animatable subtree.
+/// Metrics canvas mounted only while a concrete company is selected.
 class _MetricsCanvas extends StatelessWidget {
   const _MetricsCanvas({
     super.key,
@@ -155,9 +176,11 @@ class _MetricsCanvas extends StatelessWidget {
     required this.onGenerate,
   });
 
-  final TeamMetrics metrics;
+  final ClimateMetrics metrics;
   final bool isLoading;
-  final VoidCallback onGenerate;
+
+  /// Opens the full report; `null` disables the button until a diagnosis loads.
+  final VoidCallback? onGenerate;
 
   @override
   Widget build(BuildContext context) {
@@ -166,8 +189,6 @@ class _MetricsCanvas extends StatelessWidget {
       children: <Widget>[
         const SizedBox(height: AppSpacing.lg),
         _QuadMetricsPanel(metrics: metrics, isLoading: isLoading),
-        const SizedBox(height: AppSpacing.lg),
-        _HistoricalProgressChart(history: metrics.history),
         const SizedBox(height: AppSpacing.lg),
         GradientButton(
           label: AppStrings.generateReport,
@@ -178,21 +199,21 @@ class _MetricsCanvas extends StatelessWidget {
   }
 }
 
-/// Stylized "Choose team" dropdown selector.
+/// Stylized "Choose company" dropdown selector.
 ///
-/// Presents the neutral "None" entry followed by every assigned team; the
-/// null value maps to "None" and collapses the metrics canvas.
-class _TeamSelector extends StatelessWidget {
-  const _TeamSelector({
-    required this.teams,
-    required this.selectedTeam,
+/// Presents the neutral "None" entry followed by every company; the null value
+/// maps to "None" and collapses the metrics canvas.
+class _CompanySelector extends StatelessWidget {
+  const _CompanySelector({
+    required this.companies,
+    required this.selectedCompany,
     required this.onSelected,
     required this.onCleared,
   });
 
-  final List<WorkTeam> teams;
-  final WorkTeam? selectedTeam;
-  final ValueChanged<WorkTeam> onSelected;
+  final List<Company> companies;
+  final Company? selectedCompany;
+  final ValueChanged<Company> onSelected;
   final VoidCallback onCleared;
 
   @override
@@ -201,7 +222,7 @@ class _TeamSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          AppStrings.chooseTeam,
+          AppStrings.chooseCompany,
           style: AppTypography.caption.copyWith(
             color: AppColors.dark.withValues(alpha: 0.6),
           ),
@@ -215,8 +236,8 @@ class _TeamSelector extends StatelessWidget {
             border: Border.all(color: AppColors.mint),
           ),
           child: DropdownButtonHideUnderline(
-            child: DropdownButton<WorkTeam?>(
-              value: selectedTeam,
+            child: DropdownButton<Company?>(
+              value: selectedCompany,
               isExpanded: true,
               icon: const Icon(
                 Icons.keyboard_arrow_down_rounded,
@@ -224,22 +245,22 @@ class _TeamSelector extends StatelessWidget {
               ),
               style: AppTypography.input,
               borderRadius: BorderRadius.circular(AppRadii.input),
-              items: <DropdownMenuItem<WorkTeam?>>[
-                DropdownMenuItem<WorkTeam?>(
+              items: <DropdownMenuItem<Company?>>[
+                DropdownMenuItem<Company?>(
                   value: null,
                   child: Text(AppStrings.noneOption, style: AppTypography.input),
                 ),
-                for (final WorkTeam team in teams)
-                  DropdownMenuItem<WorkTeam?>(
-                    value: team,
-                    child: Text(team.teamName, style: AppTypography.input),
+                for (final Company company in companies)
+                  DropdownMenuItem<Company?>(
+                    value: company,
+                    child: Text(company.name, style: AppTypography.input),
                   ),
               ],
-              onChanged: (WorkTeam? team) {
-                if (team == null) {
+              onChanged: (Company? company) {
+                if (company == null) {
                   onCleared();
                 } else {
-                  onSelected(team);
+                  onSelected(company);
                 }
               },
             ),
@@ -250,15 +271,20 @@ class _TeamSelector extends StatelessWidget {
   }
 }
 
-/// Two-by-two grid of high-contrast metric boxes mirroring the design blueprint.
+/// Two-by-two grid of high-contrast metric boxes fed by the company's aggregated
+/// [ClimateMetrics].
 class _QuadMetricsPanel extends StatelessWidget {
   const _QuadMetricsPanel({required this.metrics, required this.isLoading});
 
-  final TeamMetrics metrics;
+  final ClimateMetrics metrics;
   final bool isLoading;
 
-  /// Formats a normalized `0.0..1.0` ratio as a whole-percentage string.
-  static String _percent(double ratio) => '${(ratio * 100).round()}%';
+  /// Formats the 0..5 average-performance score as a whole percentage.
+  static String _performancePercent(double score) =>
+      '${(score / 5 * 100).round()}%';
+
+  /// Formats a 0..100 rate as a whole percentage.
+  static String _ratePercent(double rate) => '${rate.round()}%';
 
   @override
   Widget build(BuildContext context) {
@@ -273,16 +299,16 @@ class _QuadMetricsPanel extends StatelessWidget {
                   color: AppColors.teal,
                   icon: Icons.favorite_rounded,
                   label: AppStrings.averageWellbeing,
-                  value: _percent(metrics.averageWellbeing),
+                  value: _performancePercent(metrics.averagePerformance),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _MetricBox(
-                  color: AppColors.green,
-                  icon: Icons.groups_rounded,
-                  label: AppStrings.members,
-                  value: '${metrics.memberCount}',
+                  color: AppColors.purple,
+                  icon: Icons.assignment_rounded,
+                  label: AppStrings.completedSurveys,
+                  value: _ratePercent(metrics.positiveSurveyRate),
                 ),
               ),
             ],
@@ -295,16 +321,16 @@ class _QuadMetricsPanel extends StatelessWidget {
                   color: AppColors.danger,
                   icon: Icons.priority_high_rounded,
                   label: AppStrings.forumReports,
-                  value: '${metrics.forumReportCount}',
+                  value: '${metrics.totalReports}',
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _MetricBox(
-                  color: AppColors.purple,
-                  icon: Icons.assignment_rounded,
-                  label: AppStrings.completedSurveys,
-                  value: _percent(metrics.completedSurveys),
+                  color: AppColors.green,
+                  icon: Icons.forum_rounded,
+                  label: AppStrings.metricForumMessages,
+                  value: '${metrics.totalForumMessages}',
                 ),
               ),
             ],
@@ -362,47 +388,45 @@ class _MetricBox extends StatelessWidget {
   }
 }
 
-/// Historical progress line chart wrapped in a titled card.
-class _HistoricalProgressChart extends StatelessWidget {
-  const _HistoricalProgressChart({required this.history});
-
-  final List<MetricPoint> history;
+/// Full-screen modal loading overlay shown while a company's report is being
+/// generated (the RRHH climate diagnosis runs an AI aggregation server-side).
+///
+/// A dismiss-blocking [ModalBarrier] absorbs input while a centered card shows a
+/// spinner and a localized caption, so the metrics only appear once ready.
+class _LoadingModal extends StatelessWidget {
+  const _LoadingModal();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        border: Border.all(color: AppColors.dark.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Positioned.fill(
+      child: Stack(
         children: <Widget>[
-          Text(AppStrings.historicalProgress, style: AppTypography.label),
-          const SizedBox(height: AppSpacing.sm),
-          SizedBox(
-            height: 160,
-            width: double.infinity,
-            child: history.length < 2
-                ? Center(
-                    child: Text(
-                      AppStrings.noHistoryData,
-                      style: AppTypography.subtitle,
-                    ),
-                  )
-                // Dedicated compositing layer: isolating the canvas behind a
-                // [RepaintBoundary] prevents ambient repaints (e.g. the parent
-                // AnimatedSwitcher fade) from re-rasterizing the chart, while
-                // `willChange: false` marks the painted layer as cacheable.
-                : RepaintBoundary(
-                    child: CustomPaint(
-                      isComplex: true,
-                      willChange: false,
-                      painter: _LineChartPainter(history: history),
-                    ),
+          const ModalBarrier(dismissible: false, color: Colors.black45),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.lg,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadii.card),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(AppColors.primaryNavy),
                   ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    AppStrings.generatingReport,
+                    style: AppTypography.label,
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -410,82 +434,61 @@ class _HistoricalProgressChart extends StatelessWidget {
   }
 }
 
-/// Custom painter plotting the [history] series as a filled line chart.
+/// Presents the specific backend failure when available, stripping the leading
+/// `Exception:` noise, and falls back to the generic message.
+String _readableError(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return AppStrings.somethingWentWrong;
+  return raw.replaceFirst(RegExp(r'^Exception:\s*'), '').trim();
+}
+
+/// Opens the full climate report for [diagnosis] as a scrollable modal sheet.
 ///
-/// The horizontal axis maps sample index to width; the vertical axis maps the
-/// sample value onto the drawable height, normalized between the series' minimum
-/// and maximum so the trend fills the available space.
-class _LineChartPainter extends CustomPainter {
-  _LineChartPainter({required this.history});
-
-  final List<MetricPoint> history;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Single linear scan for the series extrema: one pass over [history]
-    // replaces the previous two lazy `map().reduce()` pipelines, halving the
-    // per-frame iteration count and avoiding the transient iterable allocations.
-    double minValue = history.first.value;
-    double maxValue = minValue;
-    for (int i = 1; i < history.length; i++) {
-      final double value = history[i].value;
-      if (value < minValue) minValue = value;
-      if (value > maxValue) maxValue = value;
-    }
-    final double span = (maxValue - minValue).abs() < 1e-9
-        ? 1
-        : (maxValue - minValue);
-
-    final List<Offset> points = <Offset>[
-      for (int i = 0; i < history.length; i++)
-        Offset(
-          size.width * (i / (history.length - 1)),
-          size.height * (1 - (history[i].value - minValue) / span),
-        ),
-    ];
-
-    // Baseline axis.
-    final Paint axisPaint = Paint()
-      ..color = AppColors.dark.withValues(alpha: 0.12)
-      ..strokeWidth = 1;
-    canvas.drawLine(
-      Offset(0, size.height),
-      Offset(size.width, size.height),
-      axisPaint,
-    );
-
-    // Line path across the data nodes.
-    final Path linePath = Path()..moveTo(points.first.dx, points.first.dy);
-    for (final Offset point in points.skip(1)) {
-      linePath.lineTo(point.dx, point.dy);
-    }
-
-    // Soft fill beneath the line.
-    final Path fillPath = Path.from(linePath)
-      ..lineTo(points.last.dx, size.height)
-      ..lineTo(points.first.dx, size.height)
-      ..close();
-    final Paint fillPaint = Paint()
-      ..color = AppColors.sky.withValues(alpha: 0.12)
-      ..style = PaintingStyle.fill;
-    canvas.drawPath(fillPath, fillPaint);
-
-    final Paint linePaint = Paint()
-      ..color = AppColors.sky
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke
-      ..strokeJoin = StrokeJoin.round
-      ..strokeCap = StrokeCap.round;
-    canvas.drawPath(linePath, linePaint);
-
-    // Data-node markers.
-    final Paint nodePaint = Paint()..color = AppColors.teal;
-    for (final Offset point in points) {
-      canvas.drawCircle(point, 3.5, nodePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_LineChartPainter oldDelegate) =>
-      oldDelegate.history != history;
+/// Reuses the already-loaded diagnosis (no additional network call) and renders
+/// the shared [ClimateReportContent] — status verdict, AI analysis and per-area
+/// breakdowns — that the summary tiles cannot show.
+Future<void> _showReportSheet(BuildContext context, ClimateDiagnosis diagnosis) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.card)),
+    ),
+    builder: (BuildContext context) {
+      return DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (BuildContext context, ScrollController scrollController) {
+          return SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.lg,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.dark.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ClimateReportContent(diagnosis: diagnosis),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
 }

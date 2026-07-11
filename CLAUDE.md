@@ -174,34 +174,149 @@ The returned `token` is the JWT used as the bearer credential for every subseque
 All use password `password123`, e.g. `carlos.mendoza@techcorp.pe`, `maria.lopez@techcorp.pe`
 (full list in the API doc §12).
 
-### ⚠️ Known architectural gap (do not "fix" silently — confirm first)
+### Authentication flow (ELYSIUM JWT — no Firebase)
 
-The current `IamWebService`/`FirebaseAuthenticationStore` implement a **Firebase ID-token bridge**
-(`SignInRequest{ id_token }` → `/iam/sessions`). The ELYSIUM backend does **not** expose those
-endpoints; it authenticates with **email/password → JWT** at `/api/v1/authentication/sign-in`
-(no Firebase). Reconciling the client to ELYSIUM's real flow (email/password credentials, JWT storage,
-dropping or repurposing the Firebase layer) is a deliberate follow-up, not yet done.
+Authentication runs **entirely against the ELYSIUM API**; the former Firebase ID-token bridge has
+been removed (no `firebase_auth`). The adapter is `ElysiumAuthenticationStore`
+(`iam/data/stores/`), which uses `google_sign_in` + `IamWebService` only. Established JWTs are cached
+in the Drift `CachedSessions` table and replayed as `Authorization: Bearer` by the `ApiClient`.
 
-Because this is the **HR (RRHH)** app, that reconciliation must target the **RRHH** contracts:
-registration maps to `RRHHProfileSignUpRequest` at `/api/v1/authentication/sign-up/rrhh` (with the
-RRHH fields above), not the employee sign-up. The registration form/BLoC and `RegisterRequest`
-currently carry only `username`/`email` and will need the RRHH fields when this work is picked up.
+| Path | Method | Trigger |
+|---|---|---|
+| `/authentication/sign-in` | `signInWithEmail` | Email/password login → `AuthenticatedUserAccountResponse{id,email,token}` |
+| `/authentication/sign-up/rrhh` | `signUpRrhh` | Classic RRHH sign-up (**returns the profile, not a token**) → adapter then calls sign-in to obtain the JWT |
+| `/authentication/google` | `authenticateWithGoogle` (phase 1) | Validates the Google `id_token`; `GoogleAuthenticationResponse{registered,id,email,token}` |
+| `/authentication/sign-up/rrhh/google` | `completeGoogleRrhhSignUp` (phase 2) | RRHH sign-up for a new Google user → `AuthenticatedUserAccountResponse` (token issued) |
+
+- **Google flow.** `google_sign_in` is initialized with `serverClientId = GOOGLE_OAUTH_CLIENT`
+  (from `config.json`), so the issued `id_token` carries the audience the backend expects. Phase 1
+  either returns a session (registered) or surfaces `GoogleRegistrationRequired{idToken,email}`; the
+  `LoginBloc` then routes into the RRHH sign-up form (`LoginStatus.registrationRequired`), passing the
+  token via `GoRouter` **`extra`** — never the URL (tokens must not appear in query strings).
+- **RRHH fields.** Both sign-up paths use the shared `RrhhProfileDraft` domain value object
+  (`name, lastName, phoneNumber, dni, rrhhDepartment, statusHierarchy [, anonymousName]`). Requests:
+  `RrhhProfileSignUpRequest` (classic, includes `email`/`password`/`anonymous_name`) and
+  `GoogleRrhhSignUpRequest` (no email/password/anonymous_name — the backend derives them from the
+  token). Note the collapsed key `rrhhdepartment` (no underscore).
+- `firebase_core`/`firebase_crashlytics` remain for crash-reporting/native infra only; they are not
+  part of the auth path.
+
+### 7.1 Backend Synchronization & JSON Mapping Contracts
+
+> Captured during the structural synchronization audit against the updated
+> `docs/backend/ELYSIUM-API_DOCUMENTATION.md`. This subsection records the *definitive* wire
+> contracts and their residual quirks so the data layer never drifts from the server again. The API
+> doc remains the single source of truth; the notes below are the client-facing distillation.
+
+**Mapping convention (verified compliant).** Every `*Response`/`*Request` in `lib/iam/data/`,
+`lib/dashboard/data/`, and `lib/payment/data/` maps its keys with explicit per-field
+`@JsonKey(name: '<snake_case>')`. There are **no** `@JsonProperty`-style bypasses, no legacy `*Dto`
+types, and no camelCase wire keys anywhere in the client. A full codegen pass produces **zero** diff
+against the committed `*.g.dart` parts — the models are in sync.
+
+**Residual backend quirks the client must honor (Jackson `SnakeCaseStrategy` artifacts):**
+
+| Contract | JSON key | Why | Client status |
+|---|---|---|---|
+| `EmployeeProfileResponse.dateStart` | `date_start` | Updated doc corrected the former `star_start` typo; the response field is now `dateStart` → serializes `date_start`, matching the request key | Not consumed by this app (Employee profile is the Employee client's surface) — map to `date_start` **if** ever added |
+| `RRHHProfile*` (`RRHHDepartment`) | `rrhhdepartment` | Leading consecutive capitals → Jackson inserts **no** underscore | Applies to the pending RRHH registration reconciliation (see gap above); use `@JsonKey(name: 'rrhhdepartment')` |
+| `CompanyResponse.ruc` | `ruc` | `RUC` collapses to lowercase `ruc` | Already mapped in `company_response.dart` |
+
+**⚠️ camelCase-inside-a-Map exception — `DashboardInsightResponse.metrics`.** The
+`POST /api/v1/dashboard-assistant` response (`DashboardInsightResponse`) has three snake_case
+top-level fields (`status`, `analysis`, `metrics`), but `metrics` is a raw Java
+`Map<String, Object>` built in code — **not** a DTO. Jackson's `@JsonNaming` rewrites only declared
+bean properties, never runtime `Map` keys, so **every key inside `metrics` stays camelCase exactly as
+written**: `averagePerformance`, `totalEvaluations`, `positiveSurveyRate`, `totalSurveyAnswers`,
+`totalReports`, `reportsByArea` (items `{areaId, areaName, reportCount}`), `totalForumMessages`,
+`forumActivityByArea` (items `{areaId, areaName, threadCount, messageCount}`). Any client that reads
+this endpoint must index `metrics['averagePerformance']`, **not** `metrics['average_performance']`.
+This mirrors the existing Stripe `metadata` map quirk. **This app now consumes this endpoint** — see
+the HR AI Climate Assistant feature in [§7.2](#72-hr-ai-climate-assistant-dashboard-assistant). The
+camelCase extraction is quarantined in `dashboard_insight_response.dart`'s `toDomain`, so the domain
+`ClimateMetrics` entity exposes only typed fields. (The separate local `TeamMetrics` model used by the
+Reports tab remains an unrelated placeholder: `DashboardRepositoryImpl.loadTeamMetrics` still returns
+`TeamMetrics.empty()` until an aggregate team-metrics endpoint lands — a documented gap, not a mapping
+bug.)
+
+**Google two-phase sign-in (implemented).** The non-Firebase Google flow —
+`POST /authentication/google` then, if unregistered, `POST /sign-up/rrhh/google` — is now wired end to
+end (`ElysiumAuthenticationStore`, `LoginBloc`, the RRHH `RegistrationBloc`/form). See the
+authentication-flow table in [§7](#7-backend-connection-elysium).
+
+**Multipart boundary (no client surface).** The doc's `POST /api/v1/assets` moves to
+`multipart/form-data` with camelCase form fields (`messageId`, `name`, `fileType`, `file`). There is
+**no `worker_forum` / asset bounded context in this client**, so there is nothing to synchronize; if
+an asset-upload surface is ever added, it must use `multipart/form-data` with those exact camelCase
+field names, not a JSON body.
+
+**Internationalization contract.** The reactive i18n layer (English/Spanish, Profile-driven language
+switch, layer-pure directional flow, remount-on-switch) is fully implemented and governed by the
+enforced rules in [§13.6](#136-internationalization-i18n-reactive-state) — that is the authoritative
+spec for any new localized surface. The former mock flavor is fully purged: no `isMockMode`-style
+flags exist anywhere on the compilation path; live dependencies are isolated solely through GetIt.
+
+### 7.2 HR AI Climate Assistant (`dashboard-assistant`)
+
+Full hexagonal slice under `lib/dashboard/` consuming `POST /api/v1/dashboard-assistant`. The HR
+specialist picks a company, optionally types a steering question, and receives an AI climate
+diagnosis. Reachable from the Reports tab app-bar action (`Icons.auto_awesome_rounded`) → full-screen
+route `DashboardRoutes.aiAssistantPath` (`/reports/ai-assistant`).
+
+| Layer | Files |
+|---|---|
+| domain | `models/climate_status.dart` (enum + `fromWire`), `models/climate_metrics.dart` (`ClimateMetrics` + `AreaReport` + `AreaForumActivity`, pure value objects), `models/climate_diagnosis.dart`; port method `DashboardRepository.diagnoseClimate({companyId, question})` |
+| data | `network/requests/analyze_dashboard_request.dart` (`company_id`, optional `question` with `includeIfNull:false`), `models/dashboard_insight_response.dart` (raw `metrics` Map → `ClimateMetrics` in `toDomain`), `DashboardWebService.analyzeDashboard`, `DashboardRepositoryImpl.diagnoseClimate` (live call, **no cache fallback**) |
+| application | `application/bloc/dashboard_assistant_bloc.dart` (+event/state); factory-registered in `DashboardDependencies` |
+| presentation | `presentation/views/hr_ai_assistant_view.dart`; `presentation/navigation/dashboard_router.dart` + `dashboard_routes.dart` (spread into `app_router.dart`, mirroring `PaymentRouter`) |
+
+Enforced conventions specific to this feature:
+
+- **camelCase metrics stay in `data/`.** `DashboardInsightResponse.metrics` is typed
+  `Map<String, dynamic>?` and read with the literal camelCase keys inside `toDomain`; the domain
+  `ClimateMetrics` is pure and typed. Never leak a raw metrics map past the adapter.
+- **Status is total.** `ClimateStatus.fromWire` maps `BUENO/REGULAR/CRITICO` (case-insensitive) and
+  falls back to `ClimateStatus.unknown`, so the banner never has a missing case. Verdict colors use
+  design tokens (`AppColors.green` / new `AppColors.warning` amber / `AppColors.danger`).
+- **No third-party markdown dependency.** The `analysis` block is rendered by an in-house
+  `_MarkdownBody` widget (headings, `-`/`•`/`*` bullets, `**bold**` inline). This deliberately avoids
+  pulling in the discontinued `flutter_markdown`; the codebase stays dependency-minimal (same reason
+  `Exo` is a bundled asset, not `google_fonts`). Swap in a package only if richer markdown is needed.
+- **All copy is localized** through `AppStrings` (en/es), including the status labels and per-area
+  count nouns.
 
 ---
 
 ## 8. Environment Configuration
 
 All build-time config lives in `lib/shared/data/network/environment_config.dart`
-(`String/bool/int.fromEnvironment`). Pass via `--dart-define`:
+(`String/bool/int.fromEnvironment`).
+
+**Primary mechanism — `--dart-define-from-file=lib/config.json`.** The four production secrets/hosts
+are injected from `lib/config.json` (git-ignored; each developer/CI supplies their own). These keys
+carry **no inline default** — an omitted key resolves to the empty string, so a misconfigured build
+fails loudly rather than silently targeting a dev fallback:
+
+| Config-file key | Dart member | Purpose |
+|---|---|---|
+| `BACKEND_BASE_URL` | `apiBaseUrl` | Backend host (e.g. `https://api.elysium-mobile.online/`; a trailing slash is normalized in `ApiClient`) |
+| `GOOGLE_OAUTH_CLIENT` | `googleServerClientId` | Google OAuth 2.0 Client ID / ID-token audience |
+| `API_KEY_GEMINI` | `geminiApiKey` | Gemini GenAI secret (reserved; no client-side adapter yet) |
+| `PUBLISHABLE_KEY_STRIPE` | `stripePublishableKey` | Stripe publishable key (reserved; checkout confirms via server `client_secret`) |
+
+**Operational overrides — still `--dart-define`.** These are *not* in `config.json`; they keep sane
+defaults so the app builds without them:
 
 | Key | Default | Purpose |
 |---|---|---|
-| `API_BASE_URL` | `http://localhost:8092` | Backend host |
 | `API_PREFIX` | `/api/v1` | Endpoint prefix |
 | `API_TIMEOUT_SECONDS` | `20` | HTTP timeout |
 | `API_LOGGING` | `false` | Request/response diagnostic logging |
-| `GOOGLE_SERVER_CLIENT_ID` | `""` | Google OAuth server client id |
 | `FIREBASE_API_KEY` / `FIREBASE_APP_ID` / `FIREBASE_MESSAGING_SENDER_ID` / `FIREBASE_PROJECT_ID` / `FIREBASE_STORAGE_BUCKET` | `""` | Firebase overrides |
+
+> `lib/config.json` is **git-ignored** and holds live secrets (Gemini key, Stripe publishable key).
+> Never commit it; distribute values out of band. Run with
+> `flutter run --dart-define-from-file=lib/config.json` (see §11).
 
 `Firebase.initializeApp` uses explicit `FirebaseOptions` only when `hasFirebaseConfiguration` is true
 (all core Firebase keys present); otherwise it falls back to native `google-services.json` /
@@ -242,10 +357,16 @@ dart run build_runner build --delete-conflicting-outputs
 ```bash
 flutter pub get
 flutter analyze                 # must be clean (0 errors) before shipping
-flutter run                     # production wiring; needs backend + Firebase config
-flutter run --dart-define=API_BASE_URL=https://<host> --dart-define=API_LOGGING=true
+# Canonical run: inject the production hosts/secrets from the git-ignored config file (see §8).
+flutter run --dart-define-from-file=lib/config.json
+# Add operational overrides alongside the file when needed:
+flutter run --dart-define-from-file=lib/config.json --dart-define=API_LOGGING=true
 dart run build_runner build     # regenerate parts
 ```
+
+> Because `BACKEND_BASE_URL` (and the other `config.json` keys) carry no inline default, a plain
+> `flutter run` without `--dart-define-from-file=lib/config.json` boots against an empty backend
+> host. Always pass the file for any build that talks to the API.
 
 ---
 

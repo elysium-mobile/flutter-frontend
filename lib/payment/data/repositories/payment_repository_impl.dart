@@ -21,9 +21,11 @@ import '../network/requests/create_stripe_checkout_request.dart';
 /// user-scoped "current membership" endpoint. [purchasePlan] exercises the real
 /// order and Stripe-checkout endpoints (best-effort, so the flow still resolves
 /// when the session is not yet reconciled to an ELYSIUM JWT — see the documented
-/// auth gap) and then synchronizes the acquired membership locally. The final
-/// card-charge confirmation with the returned `client_secret` is a Stripe-SDK
-/// concern intentionally left out of this networking layer.
+/// auth gap) and then synchronizes the acquired membership locally. Since the
+/// 2026-07-10 migration to hosted Stripe Checkout Sessions, payment confirmation
+/// happens entirely on Stripe's hosted page (the customer is redirected to the
+/// returned `checkout_url`); no client-side charge confirmation runs in this
+/// networking layer.
 class PaymentRepositoryImpl implements PaymentRepository {
   /// Creates a [PaymentRepositoryImpl] bound to its collaborators.
   PaymentRepositoryImpl({

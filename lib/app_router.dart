@@ -6,6 +6,7 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
 import 'dashboard/application/bloc/hr_reports_bloc.dart';
+import 'dashboard/presentation/navigation/dashboard_router.dart';
 import 'dashboard/presentation/views/hr_reports_view.dart';
 import 'iam/application/bloc/session_bloc.dart';
 import 'iam/presentation/navigation/iam_router.dart';
@@ -151,6 +152,9 @@ abstract final class AppRouter {
           name: IamRoutes.profileEditName,
           builder: (context, state) => const ProfileConfigView(),
         ),
+
+        // --- Authenticated full-screen dashboard flow ------------------------
+        ...DashboardRouter.authenticatedRoutes(),
 
         // --- Authenticated full-screen payment flow --------------------------
         ...PaymentRouter.authenticatedRoutes(menuRouteName: AppRoutes.menuName),

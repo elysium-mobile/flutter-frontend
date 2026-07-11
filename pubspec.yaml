@@ -58,10 +58,10 @@ dependencies:
   path_provider: ^2.1.6
   shared_preferences: ^2.5.5
 
-  # Firebase Production
+  # Firebase Production (crash reporting / native services only — authentication
+  # runs entirely against the ELYSIUM API, no Firebase Auth).
   firebase_core: ^4.10.0
   firebase_crashlytics: ^5.2.3
-  firebase_auth: ^6.5.2
   device_info_plus: ^11.5.0
 
   # i18n

@@ -23,7 +23,13 @@ abstract final class IamRouter {
       GoRoute(
         path: IamRoutes.registerPath,
         name: IamRoutes.registerName,
-        builder: (context, state) => const RegistrationView(),
+        // The optional Google context arrives via in-memory `extra` (never the
+        // URL) so the sensitive id token is not exposed in a query string.
+        builder: (context, state) => RegistrationView(
+          googleContext: state.extra is GoogleSignUpArgs
+              ? state.extra as GoogleSignUpArgs
+              : null,
+        ),
       ),
     ];
   }
