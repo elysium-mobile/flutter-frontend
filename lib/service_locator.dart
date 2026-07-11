@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import 'dashboard/dashboard_dependencies.dart';
 import 'payment/payment_dependencies.dart';
+import 'worker_forum/worker_forum_dependencies.dart';
 import 'iam/data/network/iam_web_service.dart';
 import 'iam/data/stores/elysium_authentication_store.dart';
 import 'iam/domain/stores/authentication_store.dart';
@@ -40,6 +41,9 @@ abstract final class ServiceLocator {
 
     // Payment (subscriptions & cards) web service, repository and blocs.
     PaymentDependencies.register(sl);
+
+    // Worker Forum (RRHH read-only) web service, repository and bloc.
+    WorkerForumDependencies.register(sl);
 
     // Production authentication adapter.
     _registerAuthenticationStore(sl);

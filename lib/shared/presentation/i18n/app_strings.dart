@@ -559,4 +559,27 @@ abstract final class AppStrings {
   /// Lower-case "messages" count noun (per-area rows).
   static String get messagesCountNoun =>
       AppLocale.t(en: 'messages', es: 'mensajes');
+
+  // --- Worker Forum (RRHH read-only) -----------------------------------------
+
+  /// Worker Forum screen title.
+  static String get forumTitle => AppLocale.t(en: 'Forum', es: 'Foro');
+
+  /// Main-menu entry label opening the Worker Forum.
+  static String get workerForumEntry =>
+      AppLocale.t(en: 'Worker Forum', es: 'Foro laboral');
+
+  /// "Replies" sub-header in the thread conversation view.
+  static String get forumReplies =>
+      AppLocale.t(en: 'Replies', es: 'Respuestas');
+
+  /// Anonymous-sender label prefix (rendered as "User #N" / "Usuario #N").
+  static String get forumUserPrefix =>
+      AppLocale.t(en: 'User', es: 'Usuario');
+
+  /// Empty-state copy when the company has no forum threads.
+  static String get forumEmpty => AppLocale.t(
+        en: 'No threads in your company forum yet.',
+        es: 'Aún no hay hilos en el foro de tu empresa.',
+      );
 }

@@ -21,6 +21,7 @@ import 'payment/presentation/navigation/payment_routes.dart';
 import 'shared/presentation/views/alerts_view.dart';
 import 'shared/presentation/views/home_shell_view.dart';
 import 'shared/presentation/views/main_menu_view.dart';
+import 'worker_forum/presentation/navigation/forum_router.dart';
 
 /// Route catalogue owned by the authenticated shell (shared destinations).
 ///
@@ -155,6 +156,9 @@ abstract final class AppRouter {
 
         // --- Authenticated full-screen dashboard flow ------------------------
         ...DashboardRouter.authenticatedRoutes(),
+
+        // --- Authenticated full-screen worker-forum flow ---------------------
+        ...ForumRouter.authenticatedRoutes(),
 
         // --- Authenticated full-screen payment flow --------------------------
         ...PaymentRouter.authenticatedRoutes(menuRouteName: AppRoutes.menuName),

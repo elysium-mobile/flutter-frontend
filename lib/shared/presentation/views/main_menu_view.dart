@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../iam/application/bloc/session_bloc.dart';
+import '../../../worker_forum/presentation/navigation/forum_routes.dart';
 import '../components/user_avatar.dart';
 import '../design/app_colors.dart';
 import '../design/app_dimensions.dart';
@@ -82,10 +84,48 @@ class MainMenuView extends StatelessWidget {
                 // is identity-stable across greeting rebuilds, so the framework
                 // skips re-building it entirely.
                 const _AssignedTeamsCard(teams: _sampleTeams),
+                const SizedBox(height: AppSpacing.md),
+                const _ForumEntryCard(),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Tappable entry card opening the read-only Worker Forum.
+class _ForumEntryCard extends StatelessWidget {
+  const _ForumEntryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.accentWhite,
+      borderRadius: BorderRadius.circular(AppRadii.card),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        onTap: () => context.pushNamed(ForumRoutes.forumName),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Row(
+            children: <Widget>[
+              const Icon(Icons.forum_rounded, color: AppColors.primaryNavy),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  AppStrings.workerForumEntry,
+                  style: AppTypography.label,
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.primaryNavy,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
